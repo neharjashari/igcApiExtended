@@ -79,7 +79,8 @@ func main() {
 	router.HandleFunc("/igcinfo/api/igc/{id}/", getApiIgcId)
 	router.HandleFunc("/igcinfo/api/igc/{id}/{field}/", getApiIgcField)
 
-	log.Fatal(http.ListenAndServe(":" + os.Getenv("PORT"), router))
+	port := ":" + os.Getenv("PORT")
+	log.Fatal(http.ListenAndServe(port, router))
 }
 
 
