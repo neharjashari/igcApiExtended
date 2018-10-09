@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"os"
 )
 
 
@@ -78,7 +79,7 @@ func main() {
 	router.HandleFunc("/igcinfo/api/igc/{id}/", getApiIgcId)
 	router.HandleFunc("/igcinfo/api/igc/{id}/{field}/", getApiIgcField)
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":" + os.Getenv("PORT"), router))
 
 }
 
