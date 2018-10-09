@@ -1,4 +1,3 @@
-
 # In-memory IGC track viewer
 
 This api is an online service that will allow users to browse information about IGC files. 
@@ -9,64 +8,93 @@ These files can be browsed later by entering the specific URL paths defined late
 For the development of the IGC processing, I have been using the open source IGC library for Go: goigc
 
 
+
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
-### Prerequisites
+The root of the Igc Api is /igcinfo/ which if you enter that path you get a 404 Not Found Error. From that root you can write the other paths to get results.
 
-What things you need to install the software and how to install them
 
-```
-Give examples
-```
+### GET igcinfo/api/
 
-### Installing
+For this get request you get meta information about the API
 
-A step by step series of examples that tell you how to get a development env running
+    {
+      "uptime": <uptime>
+      "info": "Service for IGC tracks."
+      "version": "v1"
+    }
 
-Say what the step will be
+where: <uptime> is the current uptime of the service formatted according to Duration format as specified by ISO 8601. 
 
-```
-Give the example
-```
 
-And repeat
+### POST igcinfo/api/igc/
 
-```
-until finished
-```
+You can do track registration with this request by putting in the request body the URL of the Igc File
 
-End with an example of getting some data out of the system or using it for a little demo
+    {
+      "url": "<url>"
+    }
 
-## Running the tests
 
-Explain how to run the automated tests for this system
+As a response you get the ID for that track:
 
-### Break down into end to end tests
+    {
+      "id": "<id>"
+    }
 
-Explain what these tests test and why
 
-```
-Give an example
-```
 
-### And coding style tests
+### GET igcinfo/api/igc/
 
-Explain what these tests test and why
+This request returns the array of all tracks ids as an array:
+    
+    [<id1>, <id2>, ...]
+        
 
-```
-Give an example
-```
+
+### GET igcinfo/api/igc/\<id\>/
+
+Returns the meta information about a given track with the provided <id>, or NOT FOUND response code with an empty body.
+    
+    {
+        "H_date": <date from File Header, H-record>,
+        "pilot": <pilot>,
+        "glider": <glider>,
+        "glider_id": <glider_id>,
+        "track_length": <calculated total track length>
+    }
+
+
+### GET igcinfo/api/igc/\<id\>/\<field\>/
+
+Returns the single detailed meta information about a given track with the provided <id>, or NOT FOUND response code with an empty body. The response should always be a string, with the exception of the calculated track length, that should be a number.
+
+Response will be: 
+
+    <pilot> for pilot
+    
+    <glider> for glider
+    
+    <glider_id> for glider_id
+    
+    <calculated total track length> for track_length
+    
+    <H_date> for H_date
+    
+
+
+## Resources
+
+Go IGC library
+
 
 ## Deployment
 
 This api has been deployed in Heroku..
 
+
 ## Built With
 
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
-
-
+Go Language
