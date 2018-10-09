@@ -70,13 +70,16 @@ type url struct {
 
 func main() {
 
-	http.HandleFunc("/igcinfo/", igcInfo)
-	http.HandleFunc("/igcinfo/api/", getApi)
-	http.HandleFunc("/igcinfo/api/igc/", getApiIgc)
-	//http.HandleFunc("/igcinfo/api/igc/{id}/", getApiIgcId)
-	//http.HandleFunc("/igcinfo/api/igc/{id}/{field/", getApiIgcField)
+	// I'm using Gorilla Mux router for routing different paths to assigned functions
+	router := mux.NewRouter()
 
-	log.Fatal(http.ListenAndServe(":" + os.Getenv("PORT"), nil))
+	router.HandleFunc("/igcinfo/", igcInfo)
+	router.HandleFunc("/igcinfo/api/", getApi)
+	router.HandleFunc("/igcinfo/api/igc/", getApiIgc)
+	router.HandleFunc("/igcinfo/api/igc/{id}/", getApiIgcId)
+	router.HandleFunc("/igcinfo/api/igc/{id}/{field}/", getApiIgcField)
+
+	log.Fatal(http.ListenAndServe(":" + os.Getenv("PORT"), router))
 }
 
 
