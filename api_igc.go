@@ -64,7 +64,13 @@ type url struct {
 }
 
 
-
+func determineListenAddress() (string, error) {
+	port := os.Getenv("PORT")
+	if port == "" {
+		return "", fmt.Errorf("$PORT not set")
+	}
+	return ":" + port, nil
+}
 
 
 
@@ -79,8 +85,14 @@ func main() {
 	router.HandleFunc("/igcinfo/api/igc/{id}/", getApiIgcId)
 	router.HandleFunc("/igcinfo/api/igc/{id}/{field}/", getApiIgcField)
 
-	port := ":" + os.Getenv("PORT")
-	log.Fatal(http.ListenAndServe(port, router))
+
+	addr, err := determineListenAddress()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Fatal(http.ListenAndServe(addr, router))
+
 }
 
 
