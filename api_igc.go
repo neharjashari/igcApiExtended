@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/marni/goigc"
-	"log"
 	"math/rand"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-	"os"
 )
 
 
@@ -79,7 +77,8 @@ func main() {
 	router.HandleFunc("/igcinfo/api/igc/{id}/", getApiIgcId)
 	router.HandleFunc("/igcinfo/api/igc/{id}/{field}/", getApiIgcField)
 
-	log.Fatal(http.ListenAndServe(":" + os.Getenv("PORT"), router))
+	//log.Fatal(http.ListenAndServe(":" + os.Getenv("PORT"), router))
+	http.Handle("/", router)
 
 }
 
