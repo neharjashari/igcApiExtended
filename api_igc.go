@@ -64,68 +64,8 @@ type url struct {
 	URL string `json:"url"`
 }
 
-//
-//func determineListenAddress() (string, error) {
-//	port := os.Getenv("PORT")
-//	if port == "" {
-//		return "", fmt.Errorf("$PORT not set")
-//	}
-//	return ":" + port, nil
-//}
 
 
-
-//func router(w http.ResponseWriter, r *http.Request) {
-//
-//	urlMap := map[string]func(http.ResponseWriter, *http.Request){ // A map of accepted URL RegEx patterns
-//		"^/igcinfo$": igcInfo,
-//		"^/igcinfo/api$": getApi,
-//		"^/igcinfo/api/igc$": getApiIgc,
-//		"^/igcinfo/api/igc/[0-9]+$": getApiIgcId,
-//		"^/igcinfo/api/igc/[0-9]+/(pilot|glider|glider_id|track_length|H_date)$": getApiIgcField,
-//	}
-//
-//
-//	result := regexMatches(r.URL.Path, urlMap) // Perform the RegEx check to see if any pattern matches
-//
-//
-//	if result != nil { // If a function is returned, call that handler function
-//		result(w, r)
-//	} else {
-//		w.WriteHeader(http.StatusNotFound) // If it isn't, send a 404 Not Found status
-//	}
-//
-//}
-//
-//
-//// Check if any of the regex patterns supplied in the map parameter match the string parameter
-//func regexMatches(url string, urlMap map[string]func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-//	for mapURL := range urlMap {
-//		res, err := regexp.MatchString(mapURL, url)
-//		if err != nil {
-//			return nil
-//		}
-//
-//		if res { // If the pattern matching returns true, return the function
-//			return urlMap[mapURL]
-//		}
-//	}
-//	return nil
-//}
-
-
-//func main() {
-//
-//	//http.HandleFunc("/", router) // Handle all the request via the urlRouter function
-//
-//	//log.Fatal(http.ListenAndServe(":" + os.Getenv("PORT"), nil))
-//
-//	err := http.ListenAndServe(GetPort(), nil)
-//	if err != nil {
-//			log.Fatal("ListenAndServe: ", err)
-//		}
-//
-//}
 
 // Get the Port from the environment so we can run on Heroku
 func GetPort() string {
@@ -150,18 +90,10 @@ func main() {
 	router.HandleFunc("/igcinfo/api/igc/{id}/", getApiIgcId)
 	router.HandleFunc("/igcinfo/api/igc/{id}/{field}/", getApiIgcField)
 
-
-	//addr, err := determineListenAddress()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//log.Fatal(http.ListenAndServe(addr, nil))
-
-		err := http.ListenAndServe(GetPort(), nil)
-		if err != nil {
-				log.Fatal("ListenAndServe: ", err)
-			}
+	err := http.ListenAndServe(GetPort(), nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 
 }
 
