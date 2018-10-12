@@ -49,7 +49,7 @@ type MetaInformation struct {
 
 type Track struct {
 	Id string	`json:"id"`
-	igcTrack igc.Track `json:"igc_track"`
+	IgcTrack igc.Track `json:"igc_track"`
 }
 
 type TrackInfo struct {
