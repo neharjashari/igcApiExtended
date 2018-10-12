@@ -48,7 +48,7 @@ type MetaInformation struct {
 }
 
 type Track struct {
-	Id string	`json:"id"`
+	Id       string    `json:"id"`
 	IgcTrack igc.Track `json:"igc_track"`
 }
 
@@ -179,7 +179,7 @@ func getApiIgc(w http.ResponseWriter, r *http.Request) {
 		// Creating an instance of Track struct where it's saved the ID of the new track and the other info about it
 		igcFile := Track{}
 		igcFile.Id = strconv.Itoa(uniqueId)
-		igcFile.igcTrack = track
+		igcFile.IgcTrack = track
 
 		// Appending the added track into our database defined at the beginning of the program for all the tracks
 		igcFilesDB = append(igcFilesDB, igcFile)
@@ -247,12 +247,12 @@ func getApiIgcId(w http.ResponseWriter, r *http.Request) {
 	// Search into igcFilesDB for the trackInfo with the requested ID and save the info from that trackInfo into the TrackInfo instance
 	for i := range igcFilesDB {
 		if igcFilesDB[i].Id == urlVars["id"] {
-			trackInfo.HDate = igcFilesDB[i].igcTrack.Date.String()
-			trackInfo.Pilot = igcFilesDB[i].igcTrack.Pilot
-			trackInfo.Glider = igcFilesDB[i].igcTrack.GliderType
-			trackInfo.GliderId = igcFilesDB[i].igcTrack.GliderID
+			trackInfo.HDate = igcFilesDB[i].IgcTrack.Date.String()
+			trackInfo.Pilot = igcFilesDB[i].IgcTrack.Pilot
+			trackInfo.Glider = igcFilesDB[i].IgcTrack.GliderType
+			trackInfo.GliderId = igcFilesDB[i].IgcTrack.GliderID
 			// The trackLength function calculates the track length of a specific track, this function is defined at the end of this script
-			trackInfo.TrackLength = trackLength(igcFilesDB[i].igcTrack)
+			trackInfo.TrackLength = trackLength(igcFilesDB[i].IgcTrack)
 
 			json.NewEncoder(w).Encode(trackInfo)
 
@@ -300,11 +300,11 @@ func getApiIgcField(w http.ResponseWriter, r *http.Request) {
 
 			// Mapping the track info into a Map
 			mapping := map[string]string {
-				"pilot" :        igcFilesDB[i].igcTrack.Pilot,
-				"glider" :       igcFilesDB[i].igcTrack.GliderType,
-				"glider_id" :    igcFilesDB[i].igcTrack.GliderID,
-				"track_length" : FloatToString(trackLength(igcFilesDB[i].igcTrack)),
-				"h_date" :       igcFilesDB[i].igcTrack.Date.String(),
+				"pilot" :        igcFilesDB[i].IgcTrack.Pilot,
+				"glider" :       igcFilesDB[i].IgcTrack.GliderType,
+				"glider_id" :    igcFilesDB[i].IgcTrack.GliderID,
+				"track_length" : FloatToString(trackLength(igcFilesDB[i].IgcTrack)),
+				"h_date" :       igcFilesDB[i].IgcTrack.Date.String(),
 			}
 
 			// Taking the field variable from the URL path and converting it to lower case to skip some potential errors
