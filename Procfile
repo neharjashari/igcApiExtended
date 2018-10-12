@@ -1,1 +1,1 @@
-web: api_igc
+web: igcinfo -port=$PORT
