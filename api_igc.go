@@ -90,6 +90,7 @@ func main() {
 	router.HandleFunc("/igcinfo/api/igc/{id}/", getApiIgcId)
 	router.HandleFunc("/igcinfo/api/igc/{id}/{field}/", getApiIgcField)
 
+
 	err := http.ListenAndServe(GetPort(), router)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
