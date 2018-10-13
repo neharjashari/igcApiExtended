@@ -5,7 +5,7 @@ IGC is an international file format for soaring track files that are used by par
 The program will store submitted tracks in memory by saving them into Go lang data structures such as Structs, Slices, Maps etc. 
 These files can be browsed later by entering the specific URL paths defined later in this README.
 
-For the development of the IGC processing, I have been using the open source IGC library for Go: goigc
+For the development of the IGC processing, I have been using the open source IGC library for Go: <a href="https://github.com/marni/goigc">goigc</a>
 
 
 
@@ -16,7 +16,7 @@ These instructions will get you a copy of the project up and running on your loc
 The root of the Igc Api is /igcinfo/ which if you enter that path you get a 404 Not Found Error. From that root you can write the other paths to get results.
 
 
-### GET igcinfo/api/
+### GET     /igcinfo/api/
 
 For this get request you get meta information about the API
 
@@ -29,7 +29,7 @@ For this get request you get meta information about the API
 where: <uptime> is the current uptime of the service formatted according to Duration format as specified by ISO 8601. 
 
 
-### POST igcinfo/api/igc/
+### POST    /igcinfo/api/igc/
 
 You can do track registration with this request by putting in the request body the URL of the Igc File
 
@@ -46,7 +46,7 @@ As a response you get the ID for that track:
 
 
 
-### GET igcinfo/api/igc/
+### GET     /igcinfo/api/igc/
 
 This request returns the array of all tracks ids as an array:
     
@@ -54,7 +54,7 @@ This request returns the array of all tracks ids as an array:
         
 
 
-### GET igcinfo/api/igc/\<id\>/
+### GET     /igcinfo/api/igc/\<id\>/
 
 Returns the meta information about a given track with the provided <id>, or NOT FOUND response code with an empty body.
     
@@ -67,7 +67,7 @@ Returns the meta information about a given track with the provided <id>, or NOT 
     }
 
 
-### GET igcinfo/api/igc/\<id\>/\<field\>/
+### GET     /igcinfo/api/igc/\<id\>/\<field\>/
 
 Returns the single detailed meta information about a given track with the provided <id>, or NOT FOUND response code with an empty body. The response should always be a string, with the exception of the calculated track length, that should be a number.
 
@@ -87,7 +87,7 @@ Response will be:
 
 ## Resources
 
-Go IGC library
+<a href="https://github.com/marni/goigc">Go IGC library</a>
 
 
 ## Deployment
