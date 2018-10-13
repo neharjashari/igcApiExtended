@@ -18,7 +18,7 @@ import (
 
 /*
 
-URLs for testing:
+URLs for testing (IGC FILES):
 
 	http://skypolaris.org/wp-content/uploads/IGS%20Files/Madrid%20to%20Jerez.igc
 	http://skypolaris.org/wp-content/uploads/IGS%20Files/Jarez%20to%20Senegal.igc
@@ -48,8 +48,9 @@ type MetaInformation struct {
 }
 
 type Track struct {
-	Id       string    `json:"id"`
-	IgcTrack igc.Track `json:"igc_track"`
+	Id       string    	`json:"id"`
+	IgcTrack igc.Track 	`json:"igc_track"`
+	Url      string		`json:"url"`
 }
 
 type TrackInfo struct {
@@ -91,6 +92,7 @@ func main() {
 	router.HandleFunc("/igcinfo/api/igc/{id}/{field}/", getApiIgcField)
 
 
+	// Set http to listen and serve for different requests in the port found in the GetPort() function
 	err := http.ListenAndServe(GetPort(), router)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
@@ -112,6 +114,7 @@ func igcInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// As described	in the assignment when you require the GET method in the root path you get a 404 Not Found error
 	http.Error(w, "404 - Page not found!", http.StatusNotFound)
 	return
 
@@ -139,9 +142,9 @@ func getApi(w http.ResponseWriter, r *http.Request) {
 	// Creating an instance of MetaInformation stuct to save the data that is going to be Encoded with JSON
 	metaInfo := &MetaInformation{}
 
-	// The FormatSince function gets the time that the server started as an argument and returns the formated time with ISO 8601 JSON format,
+	// The FormatTimeSince function gets the time that the server started as an argument and returns the formated time with ISO 8601 JSON format,
 	// which represents the time for how long the server has been running.
-	metaInfo.Uptime = FormatSince(timeStarted)
+	metaInfo.Uptime = FormatTimeSince(timeStarted)
 	metaInfo.Info = "Service for IGC tracks"
 	metaInfo.Version = "v1.0.0"
 
@@ -179,13 +182,26 @@ func getApiIgc(w http.ResponseWriter, r *http.Request) {
 
 		// Creating an instance of Track struct where it's saved the ID of the new track and the other info about it
 		igcFile := Track{}
-		igcFile.Id = strconv.Itoa(uniqueId)
+		igcFile.Id = strconv.Itoa(uniqueId)		// Converting int number to a string and saving it ti igcFile stuct
 		igcFile.IgcTrack = track
+		igcFile.Url = apiURL.URL				// Saving the URL of that track, used later to check for duplicates before appending that file into igcFilesDB
+
+
+		// Checking for duplicates so that the user doesn't add into the database igc files with the same URL
+		for i := range igcFilesDB {
+			if igcFilesDB[i].Url == igcFile.Url {
+				// If there is another file in igcFilesDB with that URL return and tell the user that that IGC FILE is already in the database
+				http.Error(w, "409 Conflict - The Igc File you entered is already in our database!", http.StatusConflict)
+				fmt.Fprintln(w, "\nThe file you entered has the following ID: ", igcFilesDB[i].Id)
+				return
+			}
+		}
+
 
 		// Appending the added track into our database defined at the beginning of the program for all the tracks
 		igcFilesDB = append(igcFilesDB, igcFile)
 
-
+		// Encoding the ID of the track that was just added to DB
 		json.NewEncoder(w).Encode(igcFile.Id)
 
 
@@ -206,10 +222,12 @@ func getApiIgc(w http.ResponseWriter, r *http.Request) {
 			igcTrackIds = append(igcTrackIds, igcFilesDB[i].Id)
 		}
 
+		// Encoding all IDs of the track in IgcFilesDB
 		json.NewEncoder(w).Encode(igcTrackIds)
 
 
 	default:
+		// For other methods except GET and POST, requested in this handler you get this error
 		http.Error(w, "Method not implemented yet", http.StatusNotImplemented)
 		return
 
@@ -281,9 +299,8 @@ func getApiIgcField(w http.ResponseWriter, r *http.Request) {
 
 	urlVars := mux.Vars(r)
 
-
-	regExId, _ := regexp.Compile("[0-9]+")
-	regExField, _ := regexp.Compile("[a-zA-Z_]+")
+	regExId, _ := regexp.Compile("[0-9]+")					// Regular Expression for IDs
+	regExField, _ := regexp.Compile("[a-zA-Z_]+")			// Regular Expression for Field
 
 	if !regExId.MatchString(urlVars["id"]) {
 		http.Error(w, "400 - Bad Request, you entered an invalid ID in URL.", http.StatusBadRequest)
@@ -300,11 +317,11 @@ func getApiIgcField(w http.ResponseWriter, r *http.Request) {
 		if igcFilesDB[i].Id == urlVars["id"] {
 
 			// Mapping the track info into a Map
-			mapping := map[string]string {
+			fields := map[string]string {
 				"pilot" :        igcFilesDB[i].IgcTrack.Pilot,
 				"glider" :       igcFilesDB[i].IgcTrack.GliderType,
 				"glider_id" :    igcFilesDB[i].IgcTrack.GliderID,
-				"track_length" : FloatToString(trackLength(igcFilesDB[i].IgcTrack)),
+				"track_length" : FloatToString(trackLength(igcFilesDB[i].IgcTrack)),	// Calculate the track field for the specific track and convertin it to String
 				"h_date" :       igcFilesDB[i].IgcTrack.Date.String(),
 			}
 
@@ -312,11 +329,13 @@ func getApiIgcField(w http.ResponseWriter, r *http.Request) {
 			field := urlVars["field"]
 			field = strings.ToLower(field)
 
-			// Encoding the data contained in the specific field saved in the map
-			if fieldData, ok := mapping[field]; ok {
+			// Searching into the map created above for the specific field that was requested
+			if fieldData, ok := fields[field]; ok {
+				// Encoding the data contained in the specific field saved in the map
 				json.NewEncoder(w).Encode(fieldData)
 				return
 			} else {
+				// If there is not a field like the one entered by the user. the user gets this error:
 				http.Error(w, "400 - Bad Request, the field you entered is not on our database!", http.StatusBadRequest)
 				return
 			}
@@ -324,6 +343,7 @@ func getApiIgcField(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// If the track with the requested ID isn't in our Database:
 	http.Error(w, "404 - The track with that id doesn't exists in IGC Files", http.StatusNotFound)
 	return
 }
@@ -333,7 +353,7 @@ func getApiIgcField(w http.ResponseWriter, r *http.Request) {
 
 // This function formats time with iso8601 json format
 // i found this function online because i couldn't find a better way of formating with json format
-func FormatSince(t time.Time) string {
+func FormatTimeSince(t time.Time) string {
 
 	const (
 		Decisecond = 100 * time.Millisecond
