@@ -92,7 +92,7 @@ Go IGC library
 
 ## Deployment
 
-This api has been deployed in Heroku..
+This api has been deployed in Heroku: https://igcapi.herokuapp.com/
 
 
 ## Built With
