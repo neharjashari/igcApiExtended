@@ -86,10 +86,10 @@ func main() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/igcinfo/", igcInfo)
-	router.HandleFunc("/igcinfo/api/", getApi)
-	router.HandleFunc("/igcinfo/api/igc/", getApiIgc)
-	router.HandleFunc("/igcinfo/api/igc/{id}/", getApiIgcId)
-	router.HandleFunc("/igcinfo/api/igc/{id}/{field}/", getApiIgcField)
+	router.HandleFunc("/igcinfo/api", getApi)
+	router.HandleFunc("/igcinfo/api/igc", getApiIgc)
+	router.HandleFunc("/igcinfo/api/igc/{id}", getApiIgcId)
+	router.HandleFunc("/igcinfo/api/igc/{id}/{field}", getApiIgcField)
 
 
 	// Set http to listen and serve for different requests in the port found in the GetPort() function
@@ -134,7 +134,7 @@ func getApi(w http.ResponseWriter, r *http.Request) {
 
 	// Check for URL malformed
 	urlVars := strings.Split(r.URL.Path, "/")
-	if len(urlVars) != 4 {
+	if len(urlVars) != 3 {
 		http.Error(w, "400 - Bad Request, too many url arguments.", http.StatusBadRequest)
 		return
 	}
@@ -209,7 +209,7 @@ func getApiIgc(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		urlVars := strings.Split(r.URL.Path, "/")
-		if len(urlVars) != 5 {
+		if len(urlVars) != 4 {
 			http.Error(w, "400 - Bad Request, too many url arguments.", http.StatusBadRequest)
 			return
 		}

@@ -276,33 +276,3 @@ func Test_getApiIgcField_MalformedURL(t *testing.T) {
 	}
 }
 
-
-
-/*
-// Testing the getApiIgc function for getting an empty array
-func Test_getApiIgc_Empty(t *testing.T) {
-
-	ts := httptest.NewServer(http.HandlerFunc(getApiIgc))
-	defer ts.Close()
-
-	resp, err := http.Get(ts.URL)
-	if err != nil {
-		t.Errorf("Error making the GET request, %s", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected StatusCode %d, received %d. ", http.StatusOK, resp.StatusCode)
-		return
-	}
-
-	var a []interface{}
-	err = json.NewDecoder(resp.Body).Decode(&a)
-	if err != nil {
-		t.Errorf("Error parsing the expected JSON body. Got error: %s", err)
-	}
-
-	if len(a) != 0 {
-		t.Errorf("Expected empty array, got %s", a)
-	}
-}
-*/
