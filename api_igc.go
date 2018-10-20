@@ -52,7 +52,7 @@ type MetaInformation struct {
 type Track struct {
 	Id       string    	`json:"id"`
 	IgcTrack igc.Track 	`json:"igc_track"`
-	Url      string		`json:"URLStruct"`
+	Url      string		`json:"url"`
 	Timestamp string 	`json:"timestamp"`
 }
 
@@ -66,7 +66,7 @@ type TrackInfo struct {
 }
 
 type URLStruct struct {
-	URL string `json:"URLStruct"`
+	URL string `json:"url"`
 }
 
 
