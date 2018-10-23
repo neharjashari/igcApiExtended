@@ -5,7 +5,6 @@ import (
 	"github.com/mongodb/mongo-go-driver/bson"
 	"github.com/mongodb/mongo-go-driver/bson/objectid"
 	"github.com/mongodb/mongo-go-driver/mongo"
-	"github.com/mongodb/mongo-go-driver/mongo/findopt"
 	"log"
 	"strings"
 	"time"
@@ -123,7 +122,7 @@ func returnTracks(n int) (string, time.Time) {
 
 	conn := mongoConnect()
 
-	resultTracks := getAllTracks(conn, true)
+	resultTracks := getAllTracks(conn)
 
 	for key, val := range resultTracks { // Go through the slice
 		response += `"` + val.Id + `",`
@@ -219,26 +218,14 @@ func increaseTrackCounter(cnt int32, db *mongo.Database) {
 }
 
 // Get all tracks
-func getAllTracks(client *mongo.Client, points bool) []Track {
+func getAllTracks(client *mongo.Client) []Track {
 	db := client.Database("igcFiles") // `paragliding` Database
 	collection := db.Collection("track") // `track` Collection
 
 	var cursor mongo.Cursor
 	var err error
 
-	// If points boolean is true
-	// Get the points for the track also
-	// Otherwise don't
-	if points {
-		cursor, err = collection.Find(context.Background(), nil)
-	} else {
-		projection := findopt.Projection(bson.NewDocument(
-			bson.EC.Int32("trackpoints", 0),
-			bson.EC.Int32("_id", 0),
-		))
-
-		cursor, err = collection.Find(context.Background(), nil, projection)
-	}
+	cursor, err = collection.Find(context.Background(), nil)
 
 	if err != nil {
 		log.Fatal(err)

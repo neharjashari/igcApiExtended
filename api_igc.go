@@ -35,7 +35,6 @@ var timeStarted = time.Now()
 
 
 
-
 // ***DATA STRUCTURES USED IN THIS API*** //
 
 type MetaInformation struct {
@@ -243,8 +242,18 @@ func getApiIgc(w http.ResponseWriter, r *http.Request) {
 			// Encoding the ID of the track that was just added to DB
 			json.NewEncoder(w).Encode(igcFile.Id)
 
+			trackCount := int32(countAllTracks(client))
 
-			triggerWhenTrackIsAdded(w, r, getLatestWebhook(client).WebhookURL)
+			latestWebhook := getLatestWebhook(client)
+			minTriggerValue := latestWebhook.MinTriggerValue
+
+			if latestWebhook.WebhookURL != "" {
+				if trackCount%minTriggerValue == 0 {
+					triggerWhenTrackIsAdded(w, r, latestWebhook.WebhookURL)
+				}
+			}
+
+
 
 		} else {
 
