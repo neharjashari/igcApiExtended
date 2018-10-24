@@ -8,9 +8,7 @@ import (
 	"time"
 )
 
-
 // *** TICKER API ***
-
 
 // Timestamps for ticker API struct
 type Timestamps struct {
@@ -19,10 +17,9 @@ type Timestamps struct {
 	oldestNewerTimestamp time.Time
 }
 
-
 // Handles path: GET /api/ticker/latest
 // Returns the timestamp of the latest added track
-func getApiTickerLatest(w http.ResponseWriter, r *http.Request) {
+func getAPITickerLatest(w http.ResponseWriter, r *http.Request) {
 
 	// The request has to be of GET type
 	if r.Method == http.MethodGet {
@@ -44,13 +41,12 @@ func getApiTickerLatest(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
 // Handles path: GET /api/ticker/
 // Returns the JSON struct representing the ticker for the IGC tracks.
 // The first track returned should be the oldest. The array of track ids returned should be
 // capped at 5, to emulate "paging" of the responses. The cap (5) should be a configuration
 // parameter of the application (ie. easy to change by the administrator).
-func getApiTicker(w http.ResponseWriter, r *http.Request) {
+func getAPITicker(w http.ResponseWriter, r *http.Request) {
 
 	// The request has to be of GET type
 	if r.Method == http.MethodGet {
@@ -103,11 +99,10 @@ func getApiTicker(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 // Handles path: GET /api/ticker/<timestamp>
 // Returns the JSON struct representing the ticker for the IGC tracks.
 // The first returned track should have the timestamp HIGHER than the one provided in the query.
-func getApiTickerTimestamp(w http.ResponseWriter, r *http.Request) {
+func getAPITickerTimestamp(w http.ResponseWriter, r *http.Request) {
 
 	// The request has to be of GET type
 	if r.Method == http.MethodGet {
@@ -169,7 +164,6 @@ func getApiTickerTimestamp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 // Return the latest timestamp
 func latestTimestamp(resultTracks []Track) time.Time {
 	var latestTimestamp time.Time // Create a variable to store the most recent track added
@@ -182,7 +176,6 @@ func latestTimestamp(resultTracks []Track) time.Time {
 
 	return latestTimestamp
 }
-
 
 // Return the oldest timestamp
 func oldestTimestamp(resultTracks []Track) time.Time {
@@ -210,7 +203,6 @@ func oldestTimestamp(resultTracks []Track) time.Time {
 	return oldestTimestamp
 }
 
-
 // Return the oldest timestamp which is newer than input timestamp
 func oldestNewerTimestamp(inputTS string, resultTracks []Track) time.Time {
 
@@ -232,7 +224,6 @@ func oldestNewerTimestamp(inputTS string, resultTracks []Track) time.Time {
 	return ts
 }
 
-
 func tickerTimestamps(inputTS string) Timestamps {
 	conn := mongoConnect()
 	resultTracks := getAllTracks(conn)
@@ -245,6 +236,3 @@ func tickerTimestamps(inputTS string) Timestamps {
 
 	return timestamps
 }
-
-
-

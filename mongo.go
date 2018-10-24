@@ -9,9 +9,7 @@ import (
 	"time"
 )
 
-
 // *** DB METHODS *** //
-
 
 // This function connects the API with Mongo Database and returns that connection
 func mongoConnect() *mongo.Client {
@@ -23,7 +21,6 @@ func mongoConnect() *mongo.Client {
 	}
 	return conn
 }
-
 
 // Check if the track already exists in the database
 func urlInMongo(url string, trackColl *mongo.Collection) bool {
@@ -48,17 +45,16 @@ func urlInMongo(url string, trackColl *mongo.Collection) bool {
 		}
 	}
 
-	if track.Url == "" { // If there is an empty field, in this case, `url`, it means the track is not on the database
+	if track.URL == "" { // If there is an empty field, in this case, `url`, it means the track is not on the database
 		return false
 	}
 	return true
 }
 
-
 // Returns the track with the specified URL as function parameters
 func getTrack(client *mongo.Client, url string) Track {
-	db := client.Database("igcFiles") 		// igcFiles Database
-	collection := db.Collection("track") 	// track Collection
+	db := client.Database("igcFiles")    // igcFiles Database
+	collection := db.Collection("track") // track Collection
 
 	// Query collection to find the specific track with that URL
 	cursor, err := collection.Find(context.Background(),
@@ -81,7 +77,6 @@ func getTrack(client *mongo.Client, url string) Track {
 
 }
 
-
 // Delete all tracks
 func deleteAllTracks(client *mongo.Client) {
 	db := client.Database("igcFiles")
@@ -90,7 +85,6 @@ func deleteAllTracks(client *mongo.Client) {
 	// Delete the tracks
 	collection.DeleteMany(context.Background(), bson.NewDocument())
 }
-
 
 // Count all tracks
 func countAllTracks(client *mongo.Client) int64 {
@@ -103,7 +97,6 @@ func countAllTracks(client *mongo.Client) int64 {
 	return count
 }
 
-
 // Return track names
 // And also t_stop track
 func returnTracks(n int) (string, time.Time) {
@@ -115,7 +108,7 @@ func returnTracks(n int) (string, time.Time) {
 	resultTracks := getAllTracks(conn)
 
 	for key, val := range resultTracks { // Go through the slice
-		response += `"` + val.Id + `",`
+		response += `"` + val.ID + `",`
 		if key == n-1 || key == len(resultTracks)-1 {
 			tStop = val.TimeRecorded
 			break
@@ -128,10 +121,8 @@ func returnTracks(n int) (string, time.Time) {
 	return response, tStop
 }
 
-
 // ObjectID used in MongoDB
 type ObjectID [12]byte
-
 
 // Get all tracks
 func getAllTracks(client *mongo.Client) []Track {
@@ -162,4 +153,3 @@ func getAllTracks(client *mongo.Client) []Track {
 
 	return resTracks
 }
-

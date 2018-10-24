@@ -7,7 +7,7 @@ import (
 
 // Handles path: GET /admin/api/tracks_count
 // Returns the current count of all tracks in the DB
-func adminApiTracksCount(w http.ResponseWriter, r *http.Request) {
+func adminAPITracksCount(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
@@ -23,7 +23,7 @@ func adminApiTracksCount(w http.ResponseWriter, r *http.Request) {
 
 // Handles path: DELETE /admin/api/track
 // It only works with DELETE method, and this handler deletes all tracks in the DB
-func adminApiTracks(w http.ResponseWriter, r *http.Request) {
+func adminAPITracks(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
@@ -40,4 +40,10 @@ func adminApiTracks(w http.ResponseWriter, r *http.Request) {
 	// Deleting all the track in DB
 	deleteAllTracks(client)
 
+}
+
+func adminAPIWebhookTrigger(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		clockTrigger(w, r)
+	}
 }

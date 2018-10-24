@@ -8,7 +8,7 @@ import (
 )
 
 
-// This function formats time with iso8601 json format
+// FormatTimeSince function formats time with iso8601 json format
 // i found this function online because i couldn't find a better way of formating with json format
 func FormatTimeSince(t time.Time) string {
 
@@ -47,9 +47,7 @@ func FormatTimeSince(t time.Time) string {
 	return fmt.Sprintf("P%dY%dD%dH%dM%d.%dS", years, days, hours, minutes, seconds, f)
 }
 
-
-
-// This function calculates the track length of each track based on the track Points.
+// trackLength function calculates the track length of each track based on the track Points.
 func trackLength(track igc.Track) float64 {
 
 	totalDistance := 0.0
@@ -61,8 +59,8 @@ func trackLength(track igc.Track) float64 {
 	return totalDistance
 }
 
-
-func FloatToString(input_num float64) string {
+// FloatToString function returns a float number formated as a string
+func FloatToString(inputNum float64) string {
 	// to convert a float number to a string
-	return strconv.FormatFloat(input_num, 'f', 4, 64)
+	return strconv.FormatFloat(inputNum, 'f', 4, 64)
 }

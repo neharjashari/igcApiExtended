@@ -16,24 +16,21 @@ import (
 	"time"
 )
 
-
 // *** WEBHOOK API *** //
 
-
-// This structure holds the info needed to register a webhook for later use
+// Webhook structure holds the info needed to register a webhook for later use
 type Webhook struct {
-	WebhookURL string		`json:"webhookURL"`
-	MinTriggerValue int32	`json:"minTriggerValue"`
-	WebhookID string		`json:"webhook_id"`
+	WebhookURL      string `json:"webhookURL"`
+	MinTriggerValue int32  `json:"minTriggerValue"`
+	WebhookID       string `json:"webhook_id"`
 }
 
-// Keeps the Webhook content to be send to Discord
+// WebhookContent keeps the webhook content to be send to Discord
 type WebhookContent struct {
-	TLatest string		`json:"t_latest"`
-	Tracks []string		`json:"tracks"`
-	Processing string	`json:"processing"`
+	TLatest    string   `json:"t_latest"`
+	Tracks     []string `json:"tracks"`
+	Processing string   `json:"processing"`
 }
-
 
 // Handles path: POST /api/webhook/new_track/
 // Registration of new webhook for notifications about tracks being added to the system.
@@ -59,10 +56,9 @@ func webhookNewTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	conn := mongoConnect()
-	db := conn.Database("igcFiles")		// igcFiles Database
-	coll := db.Collection("webhooks")		// webhooks Collection
+	db := conn.Database("igcFiles")   // igcFiles Database
+	coll := db.Collection("webhooks") // webhooks Collection
 
 	// Check if Webhook exists
 	cursor, err := coll.Find(context.Background(),
@@ -105,8 +101,8 @@ func webhookNewTrack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create an ID for the new webhook
-	uniqueId := rand.Intn(1000)
-	webhook.WebhookID = strconv.Itoa(uniqueId)
+	uniqueID := rand.Intn(1000)
+	webhook.WebhookID = strconv.Itoa(uniqueID)
 
 	// Insert the webhook if this one isn't in the Database
 	_, err = coll.InsertOne(context.Background(), webhook)
@@ -119,7 +115,6 @@ func webhookNewTrack(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(webhook.WebhookID)
 
 }
-
 
 // Handles path: /api/webhook/new_track/<webhook_id>
 func webhookID(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +159,6 @@ func webhookID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "404 - The webhook with that ID doesn't exists in our Database", http.StatusNotFound)
 		return
 
-
 		// If the request is of DELETE type, then delete the webhook with the specified ID
 	case "DELETE":
 		w.Header().Set("Content-Type", "application/json")
@@ -206,7 +200,6 @@ func webhookID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "404 - The webhook with that ID doesn't exists in our Database", http.StatusNotFound)
 		return
 
-
 	default:
 		// For other methods except GET and DELETE, requested in this handler you get this error
 		http.Error(w, "Method not implemented yet", http.StatusNotImplemented)
@@ -216,97 +209,112 @@ func webhookID(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // This function is called whenever a Track is registered in DB
 // The frequency of this function to be triggered depends on the minTriggerValue, which
 // indicates the frequency of updates - after how many tracks the webhook should be called
-func triggerWhenTrackIsAdded(w http.ResponseWriter, r *http.Request, webhookURL string) {
-
-	// Creating an instance of WebhookContent stuct
-	webhookInfo := &WebhookContent{}
-
-	processStart := time.Now() // Track when the process started
-
-	timestamps := tickerTimestamps("")
-
-	// Saving the latest added timestamp of the entire collection
-	webhookInfo.TLatest = timestamps.latestTimestamp.String()
-
-	// Creating a slice where all the IDs of track in DB are going to be saved
-	WebhookInfoTrackIDs := make([]string, 0, 0)
+func triggerWhenTrackIsAdded(w http.ResponseWriter, r *http.Request) {
 
 	// Connect to DB
 	clientDB := mongoConnect()
 
-	collection := clientDB.Database("igcFiles").Collection("track")
+	resultWebhooks := getAllWebhooks(clientDB)
 
-	// Find all the documents(tracks) in that collection
-	cursor, err := collection.Find(context.Background(),nil,nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	for _, val := range resultWebhooks {
 
-	// 'Close' the cursor
-	defer cursor.Close(context.Background())
+		// Counting the number of track at the moment
+		trackCount := int32(countAllTracks(clientDB))
 
-	track := Track{}
+		// Saving its minimal trigger value for later use
+		minTriggerValue := val.MinTriggerValue
 
-	// Point the cursor at whatever is found
-	for cursor.Next(context.Background()) {
-		err = cursor.Decode(&track)
-		if err != nil {
-			log.Fatal(err)
+		// Check according to minTriggerValue when to trigger the webhook
+		if trackCount%minTriggerValue == 0 {
+
+			// Creating an instance of WebhookContent stuct
+			webhookInfo := &WebhookContent{}
+
+			processStart := time.Now() // Track when the process started
+
+			timestamps := tickerTimestamps("")
+
+			// Saving the latest added timestamp of the entire collection
+			webhookInfo.TLatest = timestamps.latestTimestamp.String()
+
+			// Creating a slice where all the IDs of track in DB are going to be saved
+			WebhookInfoTrackIDs := make([]string, 0, 0)
+
+			collection := clientDB.Database("igcFiles").Collection("track")
+
+			// Find all the documents(tracks) in that collection
+			cursor, err := collection.Find(context.Background(), nil, nil)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// 'Close' the cursor
+			defer cursor.Close(context.Background())
+
+			track := Track{}
+
+			// Point the cursor at whatever is found
+			for cursor.Next(context.Background()) {
+				err = cursor.Decode(&track)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				// Append all the IDs of tracks in our DB to this slice
+				WebhookInfoTrackIDs = append(WebhookInfoTrackIDs, track.ID)
+
+			}
+
+			webhookInfo.Tracks = WebhookInfoTrackIDs
+
+			// Formating the processing time, time in ms of how long it took to process the request
+			webhookInfo.Processing = strconv.FormatFloat(float64(time.Since(processStart))/float64(time.Millisecond), 'f', 2, 64) + " ms"
+
+			// Formating the content to be send to Discord as JSON
+			content := "```css"
+			content += "\n{ \n\t\"t_latest\" : \"" + webhookInfo.TLatest + "\" ,"
+			content += " \n\t\"tracks\" : [ " + strings.Join(webhookInfo.Tracks, ", ") + " ] ,"
+			content += " \n\t\"processing\" : \"" + webhookInfo.Processing + "\" \n}\n"
+			content += "```"
+
+			// Adding the values to URL
+			data := url.Values{}
+			data.Set("username", "TrackAdded")
+			data.Add("content", content)
+
+			u, _ := url.ParseRequestURI(val.WebhookURL)
+			urlStr := u.String()
+
+			client := &http.Client{}
+
+			// Creating a new POST request to the webhook URL and sending the specified data to be printed in Discord
+			r, err = http.NewRequest("POST", urlStr, strings.NewReader(data.Encode())) // URL-encoded payload
+			if err != nil {
+				fmt.Fprintln(w, "Error constructing the POST request, ", err)
+			}
+
+			// Specifying the request header parameters to send the data as JSON
+			r.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
+			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+
+			resp, err := client.Do(r)
+			if err != nil {
+				fmt.Fprintln(w, "Error executing the POST request, ", err)
+			}
+
+			defer resp.Body.Close()
+
 		}
 
-		// Append all the IDs of tracks in our DB to this slice
-		WebhookInfoTrackIDs = append(WebhookInfoTrackIDs, track.Id)
-
 	}
-
-	webhookInfo.Tracks = WebhookInfoTrackIDs
-
-	// Formating the processing time, time in ms of how long it took to process the request
-	webhookInfo.Processing = strconv.FormatFloat(float64(time.Since(processStart))/float64(time.Millisecond), 'f', 2, 64) + " ms"
-
-	// Formating the content to be send to Discord as JSON
-	content := "```css"
-	content += "\n{ \n\t\"t_latest\" : \"" + webhookInfo.TLatest + "\" ,"
-	content += " \n\t\"tracks\" : [ " + strings.Join(webhookInfo.Tracks, ", ") + " ] ,"
-	content += " \n\t\"processing\" : \"" + webhookInfo.Processing + "\" \n}\n"
-	content += "```"
-
-	// Adding the values to URL
-	data := url.Values{}
-	data.Set("username", "TrackAdded")
-	data.Add("content", content)
-
-	u, _ := url.ParseRequestURI(webhookURL)
-	urlStr := u.String()
-
-	client := &http.Client{}
-
-	// Creating a new POST request to the webhook URL and sending the specified data to be printed in Discord
-	r, err = http.NewRequest("POST", urlStr, strings.NewReader(data.Encode())) // URL-encoded payload
-	if err != nil {
-		fmt.Fprintln(w,"Error constructing the POST request, ", err)
-	}
-
-	// Specifying the request header parameters to send the data as JSON
-	r.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
-	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
-
-	resp, err := client.Do(r)
-	if err != nil {
-		fmt.Fprintln(w,"Error executing the POST request, ", err)
-	}
-
-	defer resp.Body.Close()
 
 }
-
 
 // Get the latest webhook in DB
 func getLatestWebhook(client *mongo.Client) Webhook {
@@ -332,7 +340,6 @@ func getLatestWebhook(client *mongo.Client) Webhook {
 
 }
 
-
 // Delete webhook with the ID specified in function parameters
 func deleteWebhook(client *mongo.Client, webhookID string) {
 	db := client.Database("igcFiles")
@@ -346,81 +353,123 @@ func deleteWebhook(client *mongo.Client, webhookID string) {
 	)
 }
 
+// Get all webhooks
+func getAllWebhooks(client *mongo.Client) []Webhook {
+	db := client.Database("igcFiles")
+	collection := db.Collection("webhooks")
 
+	var cursor mongo.Cursor
+	var err error
+	cursor, err = collection.Find(context.Background(), nil)
 
-// TODO : nese ka nevoje nje metode te re qe thirret te ClockTrigger
-func clockTrigger(w http.ResponseWriter, r *http.Request, webhookURL string) {
-
-	webhookInfo := &WebhookContent{}
-
-	processStart := time.Now() // Track when the process started
-
-
-	timestamps := tickerTimestamps("")
-
-	webhookInfo.TLatest = timestamps.latestTimestamp.String()
-
-
-	WebhookInfoTrackIDs := make([]string, 0, 0)
-
-	clientDB := mongoConnect()
-
-	collection := clientDB.Database("igcFiles").Collection("track")
-
-	cursor, err := collection.Find(context.Background(),nil,nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// 'Close' the cursor
 	defer cursor.Close(context.Background())
 
-	track := Track{}
+	resWebhooks := []Webhook{}
+	resWebhook := Webhook{}
 
-	// Point the cursor at whatever is found
 	for cursor.Next(context.Background()) {
-		err = cursor.Decode(&track)
+		err := cursor.Decode(&resWebhook)
 		if err != nil {
 			log.Fatal(err)
 		}
-		WebhookInfoTrackIDs = append(WebhookInfoTrackIDs, track.Id)
-
+		resWebhooks = append(resWebhooks, resWebhook) // Append each resTrack to resTracks slice
 	}
 
-	webhookInfo.Tracks = WebhookInfoTrackIDs
-
-	webhookInfo.Processing = strconv.FormatFloat(float64(time.Since(processStart))/float64(time.Millisecond), 'f', 2, 64) + " ms"
-
-	// TODO : change the content as specified in assignment 2 at the clock trigger
-	content := "```css"
-	content += "\n{ \n\t\"t_latest\" : \"" + webhookInfo.TLatest + "\" ,"
-	content += " \n\t\"tracks\" : [ " + strings.Join(webhookInfo.Tracks, ", ") + " ] ,"
-	content += " \n\t\"processing\" : \"" + webhookInfo.Processing + "\" \n}\n"
-	content += "```"
-
-	data := url.Values{}
-	data.Set("username", "tracks")
-	data.Add("content", content)
-
-	u, _ := url.ParseRequestURI(webhookURL)
-	urlStr := u.String()
-
-	client := &http.Client{}
-	r, err = http.NewRequest("POST", urlStr, strings.NewReader(data.Encode())) // URL-encoded payload
-	if err != nil {
-		fmt.Fprintln(w,"Error constructing the POST request, ", err)
-	}
-	r.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
-	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
-
-	resp, err := client.Do(r)
-	if err != nil {
-		fmt.Fprintln(w,"Error executing the POST request, ", err)
-	}
-
-	defer resp.Body.Close()
-
+	return resWebhooks
 }
 
+var latestTrackCounter = 1
 
+//
+func clockTrigger(w http.ResponseWriter, r *http.Request) {
+
+	clientDB := mongoConnect()
+
+	currentTrackCount := int(countAllTracks(clientDB))
+
+	if latestTrackCounter != currentTrackCount {
+
+		resultWebhooks := getAllWebhooks(clientDB)
+		allTracks := getAllTracks(clientDB)
+
+		allTracks = allTracks[latestTrackCounter-1:]
+
+		for _, val := range resultWebhooks {
+
+			webhookInfo := &WebhookContent{}
+
+			processStart := time.Now() // Track when the process started
+
+			timestamps := tickerTimestamps("")
+
+			webhookInfo.TLatest = timestamps.latestTimestamp.String()
+
+			WebhookInfoTrackIDs := make([]string, 0, 0)
+
+			collection := clientDB.Database("igcFiles").Collection("track")
+
+			cursor, err := collection.Find(context.Background(), nil, nil)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// 'Close' the cursor
+			defer cursor.Close(context.Background())
+
+			track := Track{}
+
+			// Point the cursor at whatever is found
+			for cursor.Next(context.Background()) {
+				err = cursor.Decode(&track)
+				if err != nil {
+					log.Fatal(err)
+				}
+				WebhookInfoTrackIDs = append(WebhookInfoTrackIDs, track.ID)
+
+			}
+
+			webhookInfo.Tracks = WebhookInfoTrackIDs
+
+			webhookInfo.Processing = strconv.FormatFloat(float64(time.Since(processStart))/float64(time.Millisecond), 'f', 2, 64) + " ms"
+
+			content := "\n"
+			content += " Latest added track at: " + webhookInfo.TLatest + " ."
+			content += " \nNew tracks are: [ " + strings.Join(webhookInfo.Tracks, ", ") + " ] ."
+			content += " \nThe request took: " + webhookInfo.Processing + " time to process .\n"
+
+			data := url.Values{}
+			data.Set("username", "tracks")
+			data.Add("content", content)
+
+			u, _ := url.ParseRequestURI(val.WebhookURL)
+			urlStr := u.String()
+
+			client := &http.Client{}
+			r, err = http.NewRequest("POST", urlStr, strings.NewReader(data.Encode())) // URL-encoded payload
+			if err != nil {
+				fmt.Fprintln(w, "Error constructing the POST request, ", err)
+			}
+
+			// Specifying the request header parameters to send the data as JSON
+			r.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
+			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+
+			resp, err := client.Do(r)
+			if err != nil {
+				fmt.Fprintln(w, "Error executing the POST request, ", err)
+			}
+
+			defer resp.Body.Close()
+
+		}
+
+		latestTrackCounter = currentTrackCount
+
+	}
+
+}
