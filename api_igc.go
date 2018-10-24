@@ -430,11 +430,11 @@ func getAPIIgcField(w http.ResponseWriter, r *http.Request) {
 				// Encoding the data contained in the specific field saved in the map
 				json.NewEncoder(w).Encode(fieldData)
 				return
-			} else {
-				// If there is not a field like the one entered by the user. the user gets this error:
-				http.Error(w, "400 - Bad Request, the field you entered is not on our database!", http.StatusBadRequest)
-				return
 			}
+
+			// If there is not a field like the one entered by the user. the user gets this error:
+			http.Error(w, "400 - Bad Request, the field you entered is not on our database!", http.StatusBadRequest)
+			return
 
 		}
 	}
