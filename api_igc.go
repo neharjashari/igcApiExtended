@@ -16,8 +16,6 @@ import (
 )
 
 
-
-
 /*
 
 URLs for testing (IGC FILES):
@@ -37,20 +35,22 @@ var timeStarted = time.Now()
 
 // ***DATA STRUCTURES USED IN THIS API*** //
 
+// This structure holds Meta Information about the API
 type MetaInformation struct {
 	Uptime string		`json:"uptime"`
 	Info string			`json:"info"`
 	Version string 		`json:"version"`
 }
 
+// This structure holds the general informations about tracks posted in this API
 type Track struct {
-	Id       string    			`json:"id"`
-	Url      string				`json:"url"`
-	//Timestamp string			`json:"timestamp"`
+	Id string    				`json:"id"`
+	Url string					`json:"url"`
 	IgcTrack igc.Track 			`json:"igc_track"`
 	TimeRecorded time.Time		`json:"time_recorded"`
 }
 
+// More specific info about tracks
 type TrackInfo struct {
 	HDate string			`json:"h_date"`
 	Pilot string			`json:"pilot"`
@@ -64,26 +64,6 @@ type URLStruct struct {
 	URL string `json:"url"`
 }
 
-
-
-// *** STRUCTURES FOR WEBHOOK *** //
-
-type Webhook struct {
-	WebhookURL string		`json:"webhookURL"`
-	MinTriggerValue int32	`json:"minTriggerValue"`
-	WebhookID string		`json:"webhook_id"`
-}
-
-type WebhookContent struct {
-	TLatest string		`json:"t_latest"`
-	Tracks []string		`json:"tracks"`
-	Processing string	`json:"processing"`
-}
-
-type Discord struct {
-	Username string		`json:"username"`
-	Content string		`json:"content"`
-}
 
 
 //
@@ -105,18 +85,23 @@ func main() {
 	// I'm using Gorilla Mux router for routing different paths to assigned functions
 	router := mux.NewRouter()
 
+	// Paths for TracksAPI
 	router.HandleFunc("/paragliding/", igcInfo)
 	router.HandleFunc("/paragliding/api", getApi)
 	router.HandleFunc("/paragliding/api/track", getApiIgc)
 	router.HandleFunc("/paragliding/api/track/{id}", getApiIgcId)
 	router.HandleFunc("/paragliding/api/track/{id}/{field}", getApiIgcField)
+
+	// Paths for TickerAPI
 	router.HandleFunc("/paragliding/api/ticker/latest", getApiTickerLatest)
 	router.HandleFunc("/paragliding/api/ticker/", getApiTicker)
 	router.HandleFunc("/paragliding/api/ticker/{timestamp}", getApiTickerTimestamp)
 
+	// Paths for WebhookAPI
 	router.HandleFunc("/paragliding/api/webhook/new_track/", webhookNewTrack)
 	router.HandleFunc("/paragliding/api/webhook/new_track/{webhook_id}", webhookID)
 
+	// Paths for AdminAPI
 	router.HandleFunc("/paragliding/admin/api/tracks_count", adminApiTracksCount)
 	router.HandleFunc("/paragliding/admin/api/tracks", adminApiTracks)
 
@@ -135,8 +120,9 @@ func main() {
 // ***THE HANDLERS FOR THE CERTAIN PATHS*** //
 
 
-
-// The first handler where if you request this path you get a 404 Not Found error for GET method. For the other methods you get a status code of 501 Not Implemented
+// Handles path: GET /paragliding/
+// If you request this path you get a 404 Not Found error for GET method and you get redirected to /paragliding/api path.
+// For the other methods you get a status code of 501 Not Implemented
 func igcInfo(w http.ResponseWriter, r *http.Request) {
 
 	// For the methods that are not GET, it returns an http error 501 Not Implemented
@@ -145,13 +131,16 @@ func igcInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Redirect to /paragliding/api
 	http.Redirect(w, r, "/paragliding/api", http.StatusFound)
 
 }
 
 
-// This handler handles the path /igcinfo/api/. With the GET method on this path you get as a response Meta Information for the Api
+// This handler handles the path GET /igcinfo/api/.
+// With the GET method on this path you get as a response Meta Information for the Api
 func getApi(w http.ResponseWriter, r *http.Request) {
+
 	// Set response content-type to JSON
 	w.Header().Set("Content-Type", "application/json")
 
@@ -177,6 +166,7 @@ func getApi(w http.ResponseWriter, r *http.Request) {
 	metaInfo.Info = "Service for IGC tracks"
 	metaInfo.Version = "v2.2.0"
 
+	// Encoding with JSON the meta information
 	json.NewEncoder(w).Encode(metaInfo)
 }
 
@@ -188,6 +178,7 @@ func getApiIgc(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 
 	case "POST":
+
 		w.Header().Set("Content-Type", "application/json")
 
 		apiURL := &URLStruct{}
@@ -212,23 +203,21 @@ func getApiIgc(w http.ResponseWriter, r *http.Request) {
 		// Creating an instance of Track struct where it's saved the ID of the new track and the other info about it
 		igcFile := Track{}
 		igcFile.Id = strconv.Itoa(uniqueId)		// Converting int number to a string and saving it ti igcFile stuct
-		igcFile.IgcTrack = track
+		igcFile.IgcTrack = track				// Saving all the other igcFile information
 		igcFile.Url = apiURL.URL				// Saving the URL of that track, used later to check for duplicates before appending that file into igcFilesDB
+		igcFile.TimeRecorded = time.Now()		// Saving the time that igcFile was recorded
 
-		// As timestamp i calculated the millisecond of the upload time to the server
-		timestamp := time.Now().Second()
-		timestamp = timestamp * 1000
-		//igcFile.Timestamp = string(time.Now().Second())
-
-		igcFile.TimeRecorded = time.Now()
-
+		// Connecting to DB
 		client := mongoConnect()
 
+		// Specifying the specific collection which is going to be used
 		collection := client.Database("igcFiles").Collection("track")
 
 		// Checking for duplicates so that the user doesn't add into the database igc files with the same URL
+		// If there is duplicates the function returns true, false otherwise
 		duplicate := urlInMongo(igcFile.Url, collection)
 
+		// If there are not duplicates Insert that track to the collection
 		if !duplicate {
 
 			res, err := collection.InsertOne(context.Background(), igcFile)
@@ -242,27 +231,37 @@ func getApiIgc(w http.ResponseWriter, r *http.Request) {
 			// Encoding the ID of the track that was just added to DB
 			json.NewEncoder(w).Encode(igcFile.Id)
 
+			// Counting the number of track at the moment
 			trackCount := int32(countAllTracks(client))
 
+			// Get tha latest webhook
 			latestWebhook := getLatestWebhook(client)
+			// Saving its minimal trigger value for later use
 			minTriggerValue := latestWebhook.MinTriggerValue
 
+			// If there is a webhook available or saved trigger that webhook, othewise just continue
 			if latestWebhook.WebhookURL != "" {
+				// Check according to minTriggerValue when to trigger the webhook
 				if trackCount%minTriggerValue == 0 {
+					// This function is called whenever a Track is registered in DB
+					// The frequency of this function to be triggered depends on the minTriggerValue, which
+					// indicates the frequency of updates - after how many tracks the webhook should be called
 					triggerWhenTrackIsAdded(w, r, latestWebhook.WebhookURL)
 				}
 			}
 
-
-
 		} else {
 
+			// If there is another track in DB with that URL, get that track
 			trackInDB := getTrack(client, igcFile.Url)
-			// If there is another file in igcFilesDB with that URL return and tell the user that that IGC FILE is already in the database
-			http.Error(w, "409 Conflict - The Igc File you entered is already in our database!", http.StatusConflict)
-			fmt.Fprintln(w, "\nThe file you entered has the following ID: ", trackInDB.Id)
-			return
 
+			// Notifying the user that the IGC File posted is already in our DB
+			http.Error(w, "409 Conflict - The Igc File you entered is already in our database!", http.StatusConflict)
+
+			// Printing that igcFile's ID
+			fmt.Fprintln(w, "\nThe file you entered has the following ID: ", trackInDB.Id)
+
+			return
 		}
 
 
@@ -280,12 +279,11 @@ func getApiIgc(w http.ResponseWriter, r *http.Request) {
 		// Make a slice where are going to be saved all the IDs of the track in igcFiles database
 		igcTrackIds := make([]string, 0, 0)
 
-
-
 		client := mongoConnect()
 
 		collection := client.Database("igcFiles").Collection("track")
 
+		// Find all the documents in track collection
 		cursor, err := collection.Find(context.Background(),nil,nil)
 		if err != nil {
 			log.Fatal(err)
@@ -298,12 +296,16 @@ func getApiIgc(w http.ResponseWriter, r *http.Request) {
 
 		// Point the cursor at whatever is found
 		for cursor.Next(context.Background()) {
+			// Decoding the findings
 			err = cursor.Decode(&track)
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			// Append all the track found ID's in igcTrackIDs slice
 			igcTrackIds = append(igcTrackIds, track.Id)
 		}
+
 		// Encoding all IDs of the track in IgcFilesDB
 		json.NewEncoder(w).Encode(igcTrackIds)
 
@@ -319,11 +321,11 @@ func getApiIgc(w http.ResponseWriter, r *http.Request) {
 }
 
 
-// This handler handles the path: /igcinfo/api/igc/{id}/, which searches into igcFilesDB with the ID defined in that path
+// This handler handles the path: GET /igcinfo/api/igc/{id}/,
+// which searches into igcFilesDB with the ID defined in that path
 func getApiIgcId(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
-
 
 	if r.Method != "GET" {
 		http.Error(w, "501 - Method not implemented", http.StatusNotImplemented)
@@ -332,7 +334,6 @@ func getApiIgcId(w http.ResponseWriter, r *http.Request) {
 
 	// Using mux router to save the ID variable defined in the requested path
 	urlVars := mux.Vars(r)
-
 
 	// Regular Expression to check for ID validity, the ID can only be a set of integer numbers
 	regExId, _ := regexp.Compile("[0-9]+")
@@ -344,7 +345,6 @@ func getApiIgcId(w http.ResponseWriter, r *http.Request) {
 
 	// Creating an instance of TrackInfo structure where are saved the main information about the trackInfo
 	trackInfo := &TrackInfo{}
-
 
 
 	client := mongoConnect()
@@ -368,14 +368,13 @@ func getApiIgcId(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 
-		// Search into igcFiles DB for the trackInfo with the requested ID and save the info from that trackInfo into the TrackInfo instance
+		// Search into igcFiles found for the trackInfo with the requested ID and save the info from that trackInfo into the TrackInfo instance
 		if track.Id == urlVars["id"] {
 			trackInfo.HDate = track.IgcTrack.Date.String()
 			trackInfo.Pilot = track.IgcTrack.Pilot
 			trackInfo.Glider = track.IgcTrack.GliderType
 			trackInfo.GliderId = track.IgcTrack.GliderID
-			// The trackLength function calculates the track length of a specific track, this function is defined at the end of this script
-			trackInfo.TrackLength = trackLength(track.IgcTrack)
+			trackInfo.TrackLength = trackLength(track.IgcTrack)  // The trackLength function calculates the track length of a specific track, this function is defined at the end of this script
 			trackInfo.TrackSrcUrl = track.Url
 
 			json.NewEncoder(w).Encode(trackInfo)
@@ -391,7 +390,7 @@ func getApiIgcId(w http.ResponseWriter, r *http.Request) {
 }
 
 
-// This handler handles the path: /igcinfo/api/igc/{id}/{field}/
+// This handler handles the path: GET /igcinfo/api/igc/{id}/{field}/
 // You can search into igcFilesDB using the name of the field of the track you want to see, but first it has to be defined the ID of that particular track.
 func getApiIgcField(w http.ResponseWriter, r *http.Request) {
 

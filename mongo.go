@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"github.com/mongodb/mongo-go-driver/bson"
-	"github.com/mongodb/mongo-go-driver/bson/objectid"
 	"github.com/mongodb/mongo-go-driver/mongo"
 	"log"
 	"strings"
@@ -13,6 +12,8 @@ import (
 
 // *** DB METHODS *** //
 
+
+// This function connects the API with Mongo Database and returns that connection
 func mongoConnect() *mongo.Client {
 	// Connect to MongoDB
 	conn, err := mongo.Connect(context.Background(), "mongodb://localhost:27017", nil)
@@ -22,7 +23,6 @@ func mongoConnect() *mongo.Client {
 	}
 	return conn
 }
-
 
 
 // Check if the track already exists in the database
@@ -55,15 +55,12 @@ func urlInMongo(url string, trackColl *mongo.Collection) bool {
 }
 
 
-
-
-
-
-// Get track
+// Returns the track with the specified URL as function parameters
 func getTrack(client *mongo.Client, url string) Track {
-	db := client.Database("igcFiles") // `paragliding` Database
-	collection := db.Collection("track") // `track` Collection
+	db := client.Database("igcFiles") 		// igcFiles Database
+	collection := db.Collection("track") 	// track Collection
 
+	// Query collection to find the specific track with that URL
 	cursor, err := collection.Find(context.Background(),
 		bson.NewDocument(bson.EC.String("url", url)))
 
@@ -85,7 +82,6 @@ func getTrack(client *mongo.Client, url string) Track {
 }
 
 
-
 // Delete all tracks
 func deleteAllTracks(client *mongo.Client) {
 	db := client.Database("igcFiles")
@@ -93,8 +89,8 @@ func deleteAllTracks(client *mongo.Client) {
 
 	// Delete the tracks
 	collection.DeleteMany(context.Background(), bson.NewDocument())
-
 }
+
 
 // Count all tracks
 func countAllTracks(client *mongo.Client) int64 {
@@ -107,12 +103,6 @@ func countAllTracks(client *mongo.Client) int64 {
 	return count
 }
 
-
-
-
-
-
-// *** URANI MONGO *** //
 
 // Return track names
 // And also t_stop track
@@ -139,88 +129,14 @@ func returnTracks(n int) (string, time.Time) {
 }
 
 
-
-
-
 // ObjectID used in MongoDB
 type ObjectID [12]byte
 
-// Counter struct
-type Counter struct {
-	ID      objectid.ObjectID `bson:"_id"`
-	Counter int               `bson:"counter"`
-}
-
-
-// Get trackName from URL
-func trackNameFromURL(url string, trackColl *mongo.Collection) string {
-	// Get the trackName
-	cursor, err := trackColl.Find(context.Background(),
-		bson.NewDocument(bson.EC.String("trackurl", url)))
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer cursor.Close(context.Background())
-
-	dbResult := Track{}
-
-	for cursor.Next(context.Background()) {
-		err = cursor.Decode(&dbResult)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	return dbResult.Url
-}
-
-// Get track counter from DB
-func getTrackCounter(db *mongo.Database) int {
-	counter := db.Collection("counter") // `counter` Collection
-
-	cursor, err := counter.Find(context.Background(), nil)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer cursor.Close(context.Background())
-
-	resCounter := Counter{}
-
-	for cursor.Next(context.Background()) {
-		err := cursor.Decode(&resCounter)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	return resCounter.Counter
-}
-
-// Increase the track counter
-func increaseTrackCounter(cnt int32, db *mongo.Database) {
-	collection := db.Collection("counter") // `counter` Collection
-
-	// This is the way to update the counter field in the document
-	// Which is storen in the counter collection
-	_, err := collection.UpdateOne(context.Background(), nil,
-		bson.NewDocument(
-			bson.EC.SubDocumentFromElements("$set",
-				bson.EC.Int32("counter", cnt+1), // Increase the counter by one
-			),
-		),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 
 // Get all tracks
 func getAllTracks(client *mongo.Client) []Track {
-	db := client.Database("igcFiles") // `paragliding` Database
-	collection := db.Collection("track") // `track` Collection
+	db := client.Database("igcFiles")
+	collection := db.Collection("track")
 
 	var cursor mongo.Cursor
 	var err error
@@ -247,5 +163,3 @@ func getAllTracks(client *mongo.Client) []Track {
 	return resTracks
 }
 
-
-///////////////////////////////////////////////////////////////////////////////////////////

@@ -9,22 +9,35 @@ import (
 )
 
 
+// *** TICKER API ***
 
-// *** API TICKER ***
+
+// Timestamps for ticker API struct
+type Timestamps struct {
+	latestTimestamp      time.Time
+	oldestTimestamp      time.Time
+	oldestNewerTimestamp time.Time
+}
 
 
+// Handles path: GET /api/ticker/latest
+// Returns the timestamp of the latest added track
 func getApiTickerLatest(w http.ResponseWriter, r *http.Request) {
 
-	if r.Method == http.MethodGet { // The request has to be of GET type
+	// The request has to be of GET type
+	if r.Method == http.MethodGet {
 
 		timestamps := tickerTimestamps("")
 		latestTimestamp := timestamps.latestTimestamp
 
-		if latestTimestamp.IsZero() { // If you dont assign a time to a time.Time variable, it's value is 0 date. We can check with IsZero() function
+		if latestTimestamp.IsZero() {
+			// If you dont assign a time to a time.Time variable, it's value is 0 date. We can check with IsZero() function
 			fmt.Fprintln(w, "There are no track records")
-		} else { //If it's not zero, we can format and display it to the user
+		} else {
+			//If it's not zero, we can format and display it to the user
 			fmt.Fprintln(w, latestTimestamp.Format("02.01.2006 15:04:05.000"))
 		}
+
 	} else {
 		w.WriteHeader(http.StatusNotFound) // If it isn't, send a 404 Not Found status
 	}
@@ -32,9 +45,15 @@ func getApiTickerLatest(w http.ResponseWriter, r *http.Request) {
 }
 
 
+// Handles path: GET /api/ticker/
+// Returns the JSON struct representing the ticker for the IGC tracks.
+// The first track returned should be the oldest. The array of track ids returned should be
+// capped at 5, to emulate "paging" of the responses. The cap (5) should be a configuration
+// parameter of the application (ie. easy to change by the administrator).
 func getApiTicker(w http.ResponseWriter, r *http.Request) {
 
-	if r.Method == http.MethodGet { // The request has to be of GET type
+	// The request has to be of GET type
+	if r.Method == http.MethodGet {
 
 		processStart := time.Now() // Track when the process started
 
@@ -76,16 +95,22 @@ func getApiTicker(w http.ResponseWriter, r *http.Request) {
 		response += `],`
 		response += `"processing":` + `"` + strconv.FormatFloat(float64(time.Since(processStart))/float64(time.Millisecond), 'f', 2, 64) + `ms"`
 		response += `}`
+
 		fmt.Fprintln(w, response)
+
 	} else {
 		w.WriteHeader(http.StatusNotFound) // If it isn't, send a 404 Not Found status
 	}
 }
 
 
+// Handles path: GET /api/ticker/<timestamp>
+// Returns the JSON struct representing the ticker for the IGC tracks.
+// The first returned track should have the timestamp HIGHER than the one provided in the query.
 func getApiTickerTimestamp(w http.ResponseWriter, r *http.Request) {
 
-	if r.Method == http.MethodGet { // The request has to be of GET type
+	// The request has to be of GET type
+	if r.Method == http.MethodGet {
 
 		processStart := time.Now() // Track when the process started
 
@@ -145,15 +170,6 @@ func getApiTickerTimestamp(w http.ResponseWriter, r *http.Request) {
 }
 
 
-// Timestamps for ticker API struct
-type Timestamps struct {
-	latestTimestamp      time.Time
-	oldestTimestamp      time.Time
-	oldestNewerTimestamp time.Time
-}
-
-
-
 // Return the latest timestamp
 func latestTimestamp(resultTracks []Track) time.Time {
 	var latestTimestamp time.Time // Create a variable to store the most recent track added
@@ -166,6 +182,7 @@ func latestTimestamp(resultTracks []Track) time.Time {
 
 	return latestTimestamp
 }
+
 
 // Return the oldest timestamp
 func oldestTimestamp(resultTracks []Track) time.Time {
@@ -192,6 +209,7 @@ func oldestTimestamp(resultTracks []Track) time.Time {
 
 	return oldestTimestamp
 }
+
 
 // Return the oldest timestamp which is newer than input timestamp
 func oldestNewerTimestamp(inputTS string, resultTracks []Track) time.Time {
