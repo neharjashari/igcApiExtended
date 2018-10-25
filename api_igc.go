@@ -110,6 +110,8 @@ func main() {
 	//log.Fatal(http.ListenAndServe(":8080", router))
 }
 
+
+
 // ***THE HANDLERS FOR THE CERTAIN PATHS*** //
 
 // Handles path: GET /paragliding/

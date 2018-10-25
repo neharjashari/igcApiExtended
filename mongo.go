@@ -14,7 +14,7 @@ import (
 // This function connects the API with Mongo Database and returns that connection
 func mongoConnect() *mongo.Client {
 	// Connect to MongoDB
-	conn, err := mongo.Connect(context.Background(), "mongodb://neharjashari:nerkoid17051998@ds115592.mlab.com:15592/igcfiles", nil)
+	conn, err := mongo.Connect(context.Background(), "mongodb://neharjashari:nerkoid17051998@ds115592.mlab.com:15592/?authSource=igcfiles", nil)
 	if err != nil {
 		log.Fatal(err)
 		return nil
