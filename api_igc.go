@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -61,17 +62,17 @@ type URLStruct struct {
 	URL string `json:"url"`
 }
 
-//
-//// Get the Port from the environment so we can run on Heroku
-//func GetPort() string {
-//	var port = os.Getenv("PORT")
-//	// Set a default port if there is nothing in the environment
-//	if port == "" {
-//		port = "4747"
-//		fmt.Println("INFO: No PORT environment variable detected, defaulting to " + port)
-//	}
-//	return ":" + port
-//}
+
+// Get the Port from the environment so we can run on Heroku
+func GetPort() string {
+	var port = os.Getenv("PORT")
+	// Set a default port if there is nothing in the environment
+	if port == "" {
+		port = "4747"
+		fmt.Println("INFO: No PORT environment variable detected, defaulting to " + port)
+	}
+	return ":" + port
+}
 
 func main() {
 
@@ -100,13 +101,13 @@ func main() {
 
 	router.HandleFunc("/pargliding/admin/api/webhooks", adminAPIWebhookTrigger)
 
-	//// Set http to listen and serve for different requests in the port found in the GetPort() function
-	//err := http.ListenAndServe(GetPort(), router)
-	//if err != nil {
-	//	log.Fatal("ListenAndServe: ", err)
-	//}
+	// Set http to listen and serve for different requests in the port found in the GetPort() function
+	err := http.ListenAndServe(GetPort(), router)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	//log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 // ***THE HANDLERS FOR THE CERTAIN PATHS*** //
