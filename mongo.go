@@ -14,7 +14,7 @@ import (
 // This function connects the API with Mongo Database and returns that connection
 func mongoConnect() *mongo.Client {
 	// Connect to MongoDB
-	conn, err := mongo.Connect(context.Background(), "mongodb://localhost:27017", nil)
+	conn, err := mongo.Connect(context.Background(), "mongodb://neharjashari:nerkoid17051998@ds115592.mlab.com:15592/igcfiles", nil)
 	if err != nil {
 		log.Fatal(err)
 		return nil
@@ -121,8 +121,6 @@ func returnTracks(n int) (string, time.Time) {
 	return response, tStop
 }
 
-// ObjectID used in MongoDB
-type ObjectID [12]byte
 
 // Get all tracks
 func getAllTracks(client *mongo.Client) []Track {
