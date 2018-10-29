@@ -63,7 +63,7 @@ func getAPITicker(w http.ResponseWriter, r *http.Request) {
 		// timestamps := returnTimestamps(5)
 
 		response := `{`
-		response += `"t_latest": "`
+		response += `{ "t_latest": "`
 		if latestTS.IsZero() {
 			response += `",`
 		} else {

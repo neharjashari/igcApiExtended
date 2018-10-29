@@ -52,12 +52,12 @@ func webhookNewTrack(w http.ResponseWriter, r *http.Request) {
 	// Decoding the URL sent by POST method into the apiURL variable
 	var error = json.NewDecoder(r.Body).Decode(&webhook)
 	if error != nil {
-		fmt.Fprintln(w, "Error made: ", error)
+		fmt.Println(w, "Error made: ", error)
 		return
 	}
 
 	conn := mongoConnect()
-	db := conn.Database("igcfiles")   // igcFiles Database
+	db := conn.Database("igcFiles")   // igcFiles Database
 	coll := db.Collection("webhooks") // webhooks Collection
 
 	// Check if Webhook exists
@@ -83,7 +83,7 @@ func webhookNewTrack(w http.ResponseWriter, r *http.Request) {
 
 		// If the webhook is already in the DB, then update the minTriggerValue because that one can be changed even after
 		// the webhook has been registered. But the ID doesn't change
-		_, err := coll.UpdateOne(context.Background(),
+		_, errr := coll.UpdateOne(context.Background(),
 			bson.NewDocument(
 				bson.EC.String("webhookurl", webhook.WebhookURL),
 			),
@@ -93,8 +93,9 @@ func webhookNewTrack(w http.ResponseWriter, r *http.Request) {
 				),
 			),
 		)
-		if err != nil {
-			log.Fatal(err)
+
+		if errr != nil {
+			log.Fatal(errr)
 		}
 
 		return
@@ -112,9 +113,14 @@ func webhookNewTrack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Encoding the ID of the track that was just added to DB
-	json.NewEncoder(w).Encode(webhook.WebhookID)
+	err = json.NewEncoder(w).Encode(webhook.WebhookID)
+	if err != nil {
+		fmt.Println("Error made while encoding with JSON, : ", err)
+		return
+	}
 
 }
+
 
 // Handles path: /api/webhook/new_track/<webhook_id>
 func webhookID(w http.ResponseWriter, r *http.Request) {
@@ -129,37 +135,22 @@ func webhookID(w http.ResponseWriter, r *http.Request) {
 
 		client := mongoConnect()
 
-		collection := client.Database("igcfiles").Collection("webhooks")
+		webhook := getWebhook(client, urlVars["webhook_id"])
 
-		cursor, err := collection.Find(context.Background(),
-			bson.NewDocument(bson.EC.String("webhookid", urlVars["webhook_id"])))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// 'Close' the cursor
-		defer cursor.Close(context.Background())
-
-		webhook := Webhook{}
-
-		// Point the cursor at whatever is found
-		for cursor.Next(context.Background()) {
-			err = cursor.Decode(&webhook)
+		if webhook.WebhookID != "" {
+			err := json.NewEncoder(w).Encode(webhook)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println("Error made while encoding with JSON, : ", err)
+				return
 			}
-
-			json.NewEncoder(w).Encode(webhook)
-
-			return
-
+		} else {
+			// If the webhook with the requested ID doesn't exist in the collection, return an error
+			http.Error(w, "404 - The webhook with that ID doesn't exists in our Database", http.StatusNotFound)
 		}
 
-		// If the webhook with the requested ID doesn't exist in the collection, return an error
-		http.Error(w, "404 - The webhook with that ID doesn't exists in our Database", http.StatusNotFound)
-		return
 
-		// If the request is of DELETE type, then delete the webhook with the specified ID
+
+	// If the request is of DELETE type, then delete the webhook with the specified ID
 	case "DELETE":
 		w.Header().Set("Content-Type", "application/json")
 
@@ -167,43 +158,27 @@ func webhookID(w http.ResponseWriter, r *http.Request) {
 
 		client := mongoConnect()
 
-		collection := client.Database("igcfiles").Collection("webhooks")
+		webhook := getWebhook(client,  urlVars["webhook_id"])
 
-		cursor, err := collection.Find(context.Background(),
-			bson.NewDocument(bson.EC.String("webhookid", urlVars["webhook_id"])))
-		if err != nil {
-			log.Fatal(err)
-		}
+		if webhook.WebhookID != "" {
 
-		// 'Close' the cursor
-		defer cursor.Close(context.Background())
-
-		webhook := Webhook{}
-
-		// Point the cursor at whatever is found
-		for cursor.Next(context.Background()) {
-			err = cursor.Decode(&webhook)
+			err := json.NewEncoder(w).Encode(webhook)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println("Error made while encoding with JSON, : ", err)
+				return
 			}
-
-			json.NewEncoder(w).Encode(webhook)
 
 			// Delete the webhook that was found
 			deleteWebhook(client, webhook.WebhookID)
-
-			return
-
+		} else {
+			// If the webhook with the requested ID doesn't exist in the collection, return an error
+			http.Error(w, "404 - The webhook with that ID doesn't exists in our Database", http.StatusNotFound)
 		}
 
-		// If the webhook with the requested ID doesn't exist in the collection, return an error
-		http.Error(w, "404 - The webhook with that ID doesn't exists in our Database", http.StatusNotFound)
-		return
 
 	default:
 		// For other methods except GET and DELETE, requested in this handler you get this error
 		http.Error(w, "Method not implemented yet", http.StatusNotImplemented)
-		return
 
 	}
 
@@ -243,9 +218,9 @@ func triggerWhenTrackIsAdded(w http.ResponseWriter, r *http.Request) {
 			webhookInfo.TLatest = timestamps.latestTimestamp.String()
 
 			// Creating a slice where all the IDs of track in DB are going to be saved
-			WebhookInfoTrackIDs := make([]string, 0, 0)
+			WebhookInfoTrackIDs := make([]string, 0)
 
-			collection := clientDB.Database("igcfiles").Collection("track")
+			collection := clientDB.Database("igcFiles").Collection("track")
 
 			// Find all the documents(tracks) in that collection
 			cursor, err := collection.Find(context.Background(), nil, nil)
@@ -295,7 +270,7 @@ func triggerWhenTrackIsAdded(w http.ResponseWriter, r *http.Request) {
 			// Creating a new POST request to the webhook URL and sending the specified data to be printed in Discord
 			r, err = http.NewRequest("POST", urlStr, strings.NewReader(data.Encode())) // URL-encoded payload
 			if err != nil {
-				fmt.Fprintln(w, "Error constructing the POST request, ", err)
+				fmt.Println(w, "Error constructing the POST request, ", err)
 			}
 
 			// Specifying the request header parameters to send the data as JSON
@@ -305,7 +280,7 @@ func triggerWhenTrackIsAdded(w http.ResponseWriter, r *http.Request) {
 
 			resp, err := client.Do(r)
 			if err != nil {
-				fmt.Fprintln(w, "Error executing the POST request, ", err)
+				fmt.Println(w, "Error executing the POST request, ", err)
 			}
 
 			defer resp.Body.Close()
@@ -316,12 +291,14 @@ func triggerWhenTrackIsAdded(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// Get the latest webhook in DB
-func getLatestWebhook(client *mongo.Client) Webhook {
-	db := client.Database("igcfiles")
-	collection := db.Collection("webhooks")
 
-	cursor, err := collection.Find(context.Background(), nil)
+// Delete webhook with the ID specified in function parameters
+func getWebhook(client *mongo.Client, webhookID string) Webhook {
+	db := client.Database("igcfiles")   // `paragliding` Database
+	collection := db.Collection("webhook") // `webhook` Collection
+
+	cursor, err := collection.Find(context.Background(),
+		bson.NewDocument(bson.EC.String("webhookid", webhookID)))
 
 	if err != nil {
 		log.Fatal(err)
@@ -337,12 +314,12 @@ func getLatestWebhook(client *mongo.Client) Webhook {
 	}
 
 	return resWebhook
-
 }
+
 
 // Delete webhook with the ID specified in function parameters
 func deleteWebhook(client *mongo.Client, webhookID string) {
-	db := client.Database("igcfiles")
+	db := client.Database("igcFiles")
 	collection := db.Collection("webhooks")
 
 	// Delete the webhook
@@ -355,7 +332,7 @@ func deleteWebhook(client *mongo.Client, webhookID string) {
 
 // Get all webhooks
 func getAllWebhooks(client *mongo.Client) []Webhook {
-	db := client.Database("igcfiles")
+	db := client.Database("igcFiles")
 	collection := db.Collection("webhooks")
 
 	var cursor mongo.Cursor
@@ -394,9 +371,6 @@ func clockTrigger(w http.ResponseWriter, r *http.Request) {
 	if latestTrackCounter != currentTrackCount {
 
 		resultWebhooks := getAllWebhooks(clientDB)
-		allTracks := getAllTracks(clientDB)
-
-		allTracks = allTracks[latestTrackCounter-1:]
 
 		for _, val := range resultWebhooks {
 
@@ -408,9 +382,9 @@ func clockTrigger(w http.ResponseWriter, r *http.Request) {
 
 			webhookInfo.TLatest = timestamps.latestTimestamp.String()
 
-			WebhookInfoTrackIDs := make([]string, 0, 0)
+			WebhookInfoTrackIDs := make([]string, 0)
 
-			collection := clientDB.Database("igcfiles").Collection("track")
+			collection := clientDB.Database("igcFiles").Collection("track")
 
 			cursor, err := collection.Find(context.Background(), nil, nil)
 			if err != nil {
@@ -451,7 +425,7 @@ func clockTrigger(w http.ResponseWriter, r *http.Request) {
 			client := &http.Client{}
 			r, err = http.NewRequest("POST", urlStr, strings.NewReader(data.Encode())) // URL-encoded payload
 			if err != nil {
-				fmt.Fprintln(w, "Error constructing the POST request, ", err)
+				fmt.Println(w, "Error constructing the POST request, ", err)
 			}
 
 			// Specifying the request header parameters to send the data as JSON
@@ -461,7 +435,7 @@ func clockTrigger(w http.ResponseWriter, r *http.Request) {
 
 			resp, err := client.Do(r)
 			if err != nil {
-				fmt.Fprintln(w, "Error executing the POST request, ", err)
+				fmt.Println(w, "Error executing the POST request, ", err)
 			}
 
 			defer resp.Body.Close()

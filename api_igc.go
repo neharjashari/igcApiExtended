@@ -9,7 +9,6 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -66,17 +65,17 @@ type URLStruct struct {
 	URL string `json:"url"`
 }
 
-
-// Get the Port from the environment so we can run on Heroku
-func GetPort() string {
-	var port = os.Getenv("PORT")
-	// Set a default port if there is nothing in the environment
-	if port == "" {
-		port = "4747"
-		fmt.Println("INFO: No PORT environment variable detected, defaulting to " + port)
-	}
-	return ":" + port
-}
+//
+//// Get the Port from the environment so we can run on Heroku
+//func GetPort() string {
+//	var port = os.Getenv("PORT")
+//	// Set a default port if there is nothing in the environment
+//	if port == "" {
+//		port = "4747"
+//		fmt.Println("INFO: No PORT environment variable detected, defaulting to " + port)
+//	}
+//	return ":" + port
+//}
 
 func main() {
 
@@ -105,13 +104,13 @@ func main() {
 
 	router.HandleFunc("/paragliding/admin/api/webhooks", adminAPIWebhookTrigger)
 
-	// Set http to listen and serve for different requests in the port found in the GetPort() function
-	err := http.ListenAndServe(GetPort(), router)
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
+	//// Set http to listen and serve for different requests in the port found in the GetPort() function
+	//err := http.ListenAndServe(GetPort(), router)
+	//if err != nil {
+	//	log.Fatal("ListenAndServe: ", err)
+	//}
 
-	//log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 // ***THE HANDLERS FOR THE CERTAIN PATHS*** //
@@ -122,7 +121,7 @@ func main() {
 func igcInfo(w http.ResponseWriter, r *http.Request) {
 
 	// For the methods that are not GET, it returns an http error 501 Not Implemented
-	if r.Method != "GET" {
+	if r.Method != http.MethodGet {
 		http.Error(w, "501 - Method not implemented", http.StatusNotImplemented)
 		return
 	}
@@ -140,7 +139,7 @@ func getAPI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// For the methods that are not GET, it returns an http error 501 Not Implemented
-	if r.Method != "GET" {
+	if r.Method != http.MethodGet {
 		http.Error(w, "501 - Method not implemented", http.StatusNotImplemented)
 		return
 	}
@@ -148,7 +147,7 @@ func getAPI(w http.ResponseWriter, r *http.Request) {
 	// Check for URL malformed
 	urlVars := strings.Split(r.URL.Path, "/")
 	if len(urlVars) != 3 {
-		http.Error(w, "400 - Bad Request, too many url arguments.", http.StatusBadRequest)
+		http.Error(w, "400 - Bad Request, too many URLStruct arguments.", http.StatusBadRequest)
 		return
 	}
 
@@ -162,7 +161,11 @@ func getAPI(w http.ResponseWriter, r *http.Request) {
 	metaInfo.Version = "v2.2.0"
 
 	// Encoding with JSON the meta information
-	json.NewEncoder(w).Encode(metaInfo)
+	err := json.NewEncoder(w).Encode(metaInfo)
+	if err != nil {
+		fmt.Println("Error made while encoding with JSON, : ", err)
+		return
+	}
 }
 
 // Handle POST methods in which you enter an URL and you get back an ID for that inserted track on the database.
@@ -180,7 +183,7 @@ func getAPIIgc(w http.ResponseWriter, r *http.Request) {
 		// Decoding the URL sent by POST method into the apiURL variable
 		var error = json.NewDecoder(r.Body).Decode(apiURL)
 		if error != nil {
-			fmt.Fprintln(w, "Error made: ", error)
+			fmt.Println("Error made: ", error)
 			return
 		}
 
@@ -192,7 +195,7 @@ func getAPIIgc(w http.ResponseWriter, r *http.Request) {
 		// Parsing that URL into igc library where the results are saved in the track variable
 		track, err := igc.ParseLocation(apiURL.URL)
 		if err != nil {
-			fmt.Fprintln(w, "Error made: ", err)
+			fmt.Println( "Error made: ", err)
 			return
 		}
 
@@ -216,7 +219,7 @@ func getAPIIgc(w http.ResponseWriter, r *http.Request) {
 		client := mongoConnect()
 
 		// Specifying the specific collection which is going to be used
-		collection := client.Database("igcfiles").Collection("track")
+		collection := client.Database("igcFiles").Collection("track")
 
 		// Checking for duplicates so that the user doesn't add into the database igc files with the same URL
 		// If there is duplicates the function returns true, false otherwise
@@ -236,7 +239,11 @@ func getAPIIgc(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Encoding the ID of the track that was just added to DB
-			json.NewEncoder(w).Encode(igcFile.ID)
+			err = json.NewEncoder(w).Encode(igcFile.ID)
+			if err != nil {
+				fmt.Println("Error made while encoding with JSON, : ", err)
+				return
+			}
 
 			triggerWhenTrackIsAdded(w, r)
 
@@ -264,42 +271,26 @@ func getAPIIgc(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Make a slice where are going to be saved all the IDs of the track in igcFiles database
-		igcTrackIds := make([]string, 0, 0)
+		igcTrackIds := make([]string, 0)
 
 		client := mongoConnect()
 
-		collection := client.Database("igcfiles").Collection("track")
+		tracks := getAllTracks(client)
 
-		// Find all the documents in track collection
-		cursor, err := collection.Find(context.Background(), nil, nil)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// 'Close' the cursor
-		defer cursor.Close(context.Background())
-
-		track := Track{}
-
-		// Point the cursor at whatever is found
-		for cursor.Next(context.Background()) {
-			// Decoding the findings
-			err = cursor.Decode(&track)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			// Append all the track found ID's in igcTrackIDs slice
-			igcTrackIds = append(igcTrackIds, track.ID)
+		for _, trackInArray := range tracks {
+			igcTrackIds = append(igcTrackIds, trackInArray.ID)
 		}
 
 		// Encoding all IDs of the track in IgcFilesDB
-		json.NewEncoder(w).Encode(igcTrackIds)
+		err := json.NewEncoder(w).Encode(igcTrackIds)
+		if err != nil {
+			fmt.Println("Error made while encoding with JSON, : ", err)
+			return
+		}
 
 	default:
 		// For other methods except GET and POST, requested in this handler you get this error
 		http.Error(w, "Method not implemented yet", http.StatusNotImplemented)
-		return
 
 	}
 
@@ -311,7 +302,7 @@ func getAPIIgcID(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if r.Method != "GET" {
+	if r.Method != http.MethodGet {
 		http.Error(w, "501 - Method not implemented", http.StatusNotImplemented)
 		return
 	}
@@ -332,7 +323,7 @@ func getAPIIgcID(w http.ResponseWriter, r *http.Request) {
 
 	client := mongoConnect()
 
-	collection := client.Database("igcfiles").Collection("track")
+	collection := client.Database("igcFiles").Collection("track")
 
 	cursor, err := collection.Find(context.Background(), nil, nil)
 	if err != nil {
@@ -360,7 +351,11 @@ func getAPIIgcID(w http.ResponseWriter, r *http.Request) {
 			trackInfo.TrackLength = track.TrackLength // The trackLength function calculates the track length of a specific track, this function is defined at the end of this script
 			trackInfo.TrackSrcURL = track.URL
 
-			json.NewEncoder(w).Encode(trackInfo)
+			err = json.NewEncoder(w).Encode(trackInfo)
+			if err != nil {
+				fmt.Println("Error made while encoding with JSON, : ", err)
+				return
+			}
 
 			return
 		}
@@ -368,7 +363,6 @@ func getAPIIgcID(w http.ResponseWriter, r *http.Request) {
 
 	// If the track if the requested ID doesn't exist in igcFilesDB, it returns an error
 	http.Error(w, "404 - The trackInfo with that id doesn't exists in IGC Files", http.StatusNotFound)
-	return
 
 }
 
@@ -378,7 +372,7 @@ func getAPIIgcField(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if r.Method != "GET" {
+	if r.Method != http.MethodGet {
 		http.Error(w, "501 - Method not implemented", http.StatusNotImplemented)
 		return
 	}
@@ -400,7 +394,7 @@ func getAPIIgcField(w http.ResponseWriter, r *http.Request) {
 
 	client := mongoConnect()
 
-	collection := client.Database("igcfiles").Collection("track")
+	collection := client.Database("igcFiles").Collection("track")
 
 	cursor, err := collection.Find(context.Background(), nil, nil)
 	if err != nil {
@@ -439,7 +433,11 @@ func getAPIIgcField(w http.ResponseWriter, r *http.Request) {
 			// Searching into the map created above for the specific field that was requested
 			if fieldData, ok := fields[field]; ok {
 				// Encoding the data contained in the specific field saved in the map
-				json.NewEncoder(w).Encode(fieldData)
+				err = json.NewEncoder(w).Encode(fieldData)
+				if err != nil {
+					fmt.Println("Error made while encoding with JSON, : ", err)
+					return
+				}
 				return
 			}
 
@@ -452,5 +450,5 @@ func getAPIIgcField(w http.ResponseWriter, r *http.Request) {
 
 	// If the track with the requested ID isn't in our Database:
 	http.Error(w, "404 - The track with that id doesn't exists in IGC Files", http.StatusNotFound)
-	return
+
 }

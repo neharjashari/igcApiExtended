@@ -14,7 +14,7 @@ import (
 // This function connects the API with Mongo Database and returns that connection
 func mongoConnect() *mongo.Client {
 	// Connect to MongoDB
-	conn, err := mongo.Connect(context.Background(), "mongodb://neharjashari:nerkoid17051998@ds115592.mlab.com:15592/?authSource=igcfiles", nil)
+	conn, err := mongo.Connect(context.Background(), "mongodb://localhost:27017", nil)
 	if err != nil {
 		log.Fatal(err)
 		return nil
@@ -53,7 +53,7 @@ func urlInMongo(url string, trackColl *mongo.Collection) bool {
 
 // Returns the track with the specified URL as function parameters
 func getTrack(client *mongo.Client, url string) Track {
-	db := client.Database("igcfiles")    // igcFiles Database
+	db := client.Database("igcFiles")    // igcFiles Database
 	collection := db.Collection("track") // track Collection
 
 	// Query collection to find the specific track with that URL
@@ -79,7 +79,7 @@ func getTrack(client *mongo.Client, url string) Track {
 
 // Delete all tracks
 func deleteAllTracks(client *mongo.Client) {
-	db := client.Database("igcfiles")
+	db := client.Database("igcFiles")
 	collection := db.Collection("track")
 
 	// Delete the tracks
@@ -88,7 +88,7 @@ func deleteAllTracks(client *mongo.Client) {
 
 // Count all tracks
 func countAllTracks(client *mongo.Client) int64 {
-	db := client.Database("igcfiles")
+	db := client.Database("igcFiles")
 	collection := db.Collection("track")
 
 	// Count the tracks
@@ -124,7 +124,7 @@ func returnTracks(n int) (string, time.Time) {
 
 // Get all tracks
 func getAllTracks(client *mongo.Client) []Track {
-	db := client.Database("igcfiles")
+	db := client.Database("igcFiles")
 	collection := db.Collection("track")
 
 	var cursor mongo.Cursor
