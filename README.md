@@ -1,8 +1,8 @@
-# In-memory IGC track viewer
+# IGC track viewer API - Extended
 
 This api is an online service that will allow users to browse information about IGC files. 
 IGC is an international file format for soaring track files that are used by paragliders and gliders. 
-The program will store submitted tracks in memory by saving them into Go lang data structures such as Structs, Slices, Maps etc. 
+The program will store IGC files metadata in a NoSQL Database (persistent storage). The system will generate events and it will monitor for new events happening from the outside services.
 These files can be browsed later by entering the specific URL paths defined later in this README.
 
 For the development of the IGC processing, I have been using the open source IGC library for Go: <a href="https://github.com/marni/goigc">goigc</a>
@@ -11,12 +11,10 @@ For the development of the IGC processing, I have been using the open source IGC
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
-
-The root of the Igc Api is /igcinfo/ which if you enter that path you get a 404 Not Found Error. From that root you can write the other paths to get results.
+The project's name is **paragliding**. The root of the Igc Api is /paragliding/ which if you enter that path you get redirected to the /paragliding/api path. From that root you can write the other paths to get results.
 
 
-### GET     /igcinfo/api/
+### GET     /paragliding/api
 
 For this get request you get meta information about the API
 
@@ -29,7 +27,7 @@ For this get request you get meta information about the API
 where: <uptime> is the current uptime of the service formatted according to Duration format as specified by ISO 8601. 
 
 
-### POST    /igcinfo/api/igc/
+### POST    /paragliding/api/track
 
 You can do track registration with this request by putting in the request body the URL of the Igc File
 
@@ -46,7 +44,7 @@ As a response you get the ID for that track:
 
 
 
-### GET     /igcinfo/api/igc/
+### GET     /paragliding/api/track
 
 This request returns the array of all tracks ids as an array:
     
@@ -54,7 +52,7 @@ This request returns the array of all tracks ids as an array:
         
 
 
-### GET     /igcinfo/api/igc/\<id\>/
+### GET     /paragliding/api/track/\<id\>
 
 Returns the meta information about a given track with the provided <id>, or NOT FOUND response code with an empty body.
     
@@ -67,7 +65,7 @@ Returns the meta information about a given track with the provided <id>, or NOT 
     }
 
 
-### GET     /igcinfo/api/igc/\<id\>/\<field\>/
+### GET     /paragliding/api/track/\<id\>/\<field\>
 
 Returns the single detailed meta information about a given track with the provided <id>, or NOT FOUND response code with an empty body. The response should always be a string, with the exception of the calculated track length, that should be a number.
 
@@ -87,12 +85,14 @@ Response will be:
 
 ## Resources
 
-<a href="https://github.com/marni/goigc">Go IGC library</a>
+* [Go IGC library](https://github.com/marni/goigc)
+* [official MongoDB Go driver](https://github.com/mongodb/mongo-go-driver)
 
 
 ## Deployment
 
-This api has been deployed in Heroku: https://igcapi.herokuapp.com/
+This api has been deployed in Heroku: https://igcapi.herokuapp.com/paragliding/.
+It has also been deployed in OpenStack and it has these floating IPs: 10.212.137.38.
 
 
 ## Built With
