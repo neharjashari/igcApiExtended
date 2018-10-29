@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="f60aeecc-37d0-447f-9eb2-a0c061c0163a" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/api_igc.go" beforeDir="false" afterPath="$PROJECT_DIR$/api_igc.go" afterDir="false" />
-    </list>
+    <list default="true" id="f60aeecc-37d0-447f-9eb2-a0c061c0163a" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -101,7 +99,7 @@
     <detection-done>true</detection-done>
     <sorting>DEFINITION_ORDER</sorting>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds" extendedState="7">
     <option name="x" value="919" />
     <option name="y" value="27" />
     <option name="width" value="1001" />
@@ -159,7 +157,7 @@
     </configuration>
   </component>
   <component name="ToolWindowManager">
-    <frame x="67" y="25" width="1853" height="1055" extended-state="6" />
+    <frame x="67" y="25" width="1853" height="1055" extended-state="7" />
     <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.07083564" />
