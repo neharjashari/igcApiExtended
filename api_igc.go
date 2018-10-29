@@ -148,7 +148,7 @@ func getAPI(w http.ResponseWriter, r *http.Request) {
 	// Check for URL malformed
 	urlVars := strings.Split(r.URL.Path, "/")
 	if len(urlVars) != 3 {
-		http.Error(w, "400 - Bad Request, too many URLStruct arguments.", http.StatusBadRequest)
+		http.Error(w, "400 - Bad Request, too many url arguments.", http.StatusBadRequest)
 		return
 	}
 
@@ -216,7 +216,7 @@ func getAPIIgc(w http.ResponseWriter, r *http.Request) {
 		client := mongoConnect()
 
 		// Specifying the specific collection which is going to be used
-		collection := client.Database("igcFiles").Collection("track")
+		collection := client.Database("igcfiles").Collection("track")
 
 		// Checking for duplicates so that the user doesn't add into the database igc files with the same URL
 		// If there is duplicates the function returns true, false otherwise
@@ -268,7 +268,7 @@ func getAPIIgc(w http.ResponseWriter, r *http.Request) {
 
 		client := mongoConnect()
 
-		collection := client.Database("igcFiles").Collection("track")
+		collection := client.Database("igcfiles").Collection("track")
 
 		// Find all the documents in track collection
 		cursor, err := collection.Find(context.Background(), nil, nil)
@@ -332,7 +332,7 @@ func getAPIIgcID(w http.ResponseWriter, r *http.Request) {
 
 	client := mongoConnect()
 
-	collection := client.Database("igcFiles").Collection("track")
+	collection := client.Database("igcfiles").Collection("track")
 
 	cursor, err := collection.Find(context.Background(), nil, nil)
 	if err != nil {
@@ -400,7 +400,7 @@ func getAPIIgcField(w http.ResponseWriter, r *http.Request) {
 
 	client := mongoConnect()
 
-	collection := client.Database("igcFiles").Collection("track")
+	collection := client.Database("igcfiles").Collection("track")
 
 	cursor, err := collection.Find(context.Background(), nil, nil)
 	if err != nil {
