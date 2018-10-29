@@ -34,17 +34,21 @@ var timeStarted = time.Now()
 
 // MetaInformation structure holds Meta Information about the API
 type MetaInformation struct {
-	Uptime  string `json:"uptime"`
-	Info    string `json:"info"`
-	Version string `json:"version"`
+	Uptime  string 	`json:"uptime"`
+	Info    string 	`json:"info"`
+	Version string 	`json:"version"`
 }
 
 // Track structure holds the general informations about tracks posted in this API
 type Track struct {
-	ID           string    `json:"id"`
-	URL          string    `json:"url"`
-	IgcTrack     igc.Track `json:"igc_track"`
-	TimeRecorded time.Time `json:"time_recorded"`
+	ID           string    	`json:"id"`
+	URL          string    	`json:"url"`
+	TimeRecorded time.Time 	`json:"time_recorded"`
+	HDate       string  	`json:"h_date"`
+	Pilot       string  	`json:"pilot"`
+	Glider      string  	`json:"glider"`
+	GliderID    string  	`json:"glider_id"`
+	TrackLength float64 	`json:"track_length"`
 }
 
 // TrackInfo stucture holds some more specific info about tracks
@@ -99,7 +103,7 @@ func main() {
 	router.HandleFunc("/paragliding/admin/api/tracks_count", adminAPITracksCount)
 	router.HandleFunc("/paragliding/admin/api/tracks", adminAPITracks)
 
-	router.HandleFunc("/pargliding/admin/api/webhooks", adminAPIWebhookTrigger)
+	router.HandleFunc("/paragliding/admin/api/webhooks", adminAPIWebhookTrigger)
 
 	// Set http to listen and serve for different requests in the port found in the GetPort() function
 	err := http.ListenAndServe(GetPort(), router)
@@ -109,8 +113,6 @@ func main() {
 
 	//log.Fatal(http.ListenAndServe(":8080", router))
 }
-
-
 
 // ***THE HANDLERS FOR THE CERTAIN PATHS*** //
 
@@ -200,15 +202,21 @@ func getAPIIgc(w http.ResponseWriter, r *http.Request) {
 		// Creating an instance of Track struct where it's saved the ID of the new track and the other info about it
 		igcFile := Track{}
 		igcFile.ID = strconv.Itoa(uniqueID) // Converting int number to a string and saving it ti igcFile stuct
-		igcFile.IgcTrack = track            // Saving all the other igcFile information
+		//igcFile.IgcTrack = track            // Saving all the other igcFile information
 		igcFile.URL = apiURL.URL            // Saving the URL of that track, used later to check for duplicates before appending that file into igcFilesDB
 		igcFile.TimeRecorded = time.Now()   // Saving the time that igcFile was recorded
+		igcFile.Pilot = track.Pilot
+		igcFile.GliderID = track.GliderID
+		igcFile.Glider = track.GliderType
+		igcFile.HDate = track.Date.String()
+		igcFile.TrackLength = trackLength(track)
+
 
 		// Connecting to DB
 		client := mongoConnect()
 
 		// Specifying the specific collection which is going to be used
-		collection := client.Database("igcfiles").Collection("track")
+		collection := client.Database("igcFiles").Collection("track")
 
 		// Checking for duplicates so that the user doesn't add into the database igc files with the same URL
 		// If there is duplicates the function returns true, false otherwise
@@ -260,7 +268,7 @@ func getAPIIgc(w http.ResponseWriter, r *http.Request) {
 
 		client := mongoConnect()
 
-		collection := client.Database("igcfiles").Collection("track")
+		collection := client.Database("igcFiles").Collection("track")
 
 		// Find all the documents in track collection
 		cursor, err := collection.Find(context.Background(), nil, nil)
@@ -324,7 +332,7 @@ func getAPIIgcID(w http.ResponseWriter, r *http.Request) {
 
 	client := mongoConnect()
 
-	collection := client.Database("igcfiles").Collection("track")
+	collection := client.Database("igcFiles").Collection("track")
 
 	cursor, err := collection.Find(context.Background(), nil, nil)
 	if err != nil {
@@ -345,11 +353,11 @@ func getAPIIgcID(w http.ResponseWriter, r *http.Request) {
 
 		// Search into igcFiles found for the trackInfo with the requested ID and save the info from that trackInfo into the TrackInfo instance
 		if track.ID == urlVars["id"] {
-			trackInfo.HDate = track.IgcTrack.Date.String()
-			trackInfo.Pilot = track.IgcTrack.Pilot
-			trackInfo.Glider = track.IgcTrack.GliderType
-			trackInfo.GliderID = track.IgcTrack.GliderID
-			trackInfo.TrackLength = trackLength(track.IgcTrack) // The trackLength function calculates the track length of a specific track, this function is defined at the end of this script
+			trackInfo.HDate = track.HDate
+			trackInfo.Pilot = track.Pilot
+			trackInfo.Glider = track.Glider
+			trackInfo.GliderID = track.GliderID
+			trackInfo.TrackLength = track.TrackLength // The trackLength function calculates the track length of a specific track, this function is defined at the end of this script
 			trackInfo.TrackSrcURL = track.URL
 
 			json.NewEncoder(w).Encode(trackInfo)
@@ -392,7 +400,7 @@ func getAPIIgcField(w http.ResponseWriter, r *http.Request) {
 
 	client := mongoConnect()
 
-	collection := client.Database("igcfiles").Collection("track")
+	collection := client.Database("igcFiles").Collection("track")
 
 	cursor, err := collection.Find(context.Background(), nil, nil)
 	if err != nil {
@@ -416,11 +424,11 @@ func getAPIIgcField(w http.ResponseWriter, r *http.Request) {
 
 			// Mapping the track info into a Map
 			fields := map[string]string{
-				"pilot":         track.IgcTrack.Pilot,
-				"glider":        track.IgcTrack.GliderType,
-				"glider_id":     track.IgcTrack.GliderID,
-				"track_length":  FloatToString(trackLength(track.IgcTrack)), // Calculate the track field for the specific track and convertin it to String
-				"h_date":        track.IgcTrack.Date.String(),
+				"pilot":         track.Pilot,
+				"glider":        track.Glider,
+				"glider_id":     track.GliderID,
+				"track_length":  FloatToString(track.TrackLength), // Calculate the track field for the specific track and convertin it to String
+				"h_date":        track.HDate,
 				"track_src_url": track.URL,
 			}
 
