@@ -57,7 +57,7 @@ func webhookNewTrack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	conn := mongoConnect()
-	db := conn.Database("igcFiles")   // igcFiles Database
+	db := conn.Database("igcfiles")   // igcFiles Database
 	coll := db.Collection("webhooks") // webhooks Collection
 
 	// Check if Webhook exists
@@ -220,7 +220,7 @@ func triggerWhenTrackIsAdded(w http.ResponseWriter, r *http.Request) {
 			// Creating a slice where all the IDs of track in DB are going to be saved
 			WebhookInfoTrackIDs := make([]string, 0)
 
-			collection := clientDB.Database("igcFiles").Collection("track")
+			collection := clientDB.Database("igcfiles").Collection("track")
 
 			// Find all the documents(tracks) in that collection
 			cursor, err := collection.Find(context.Background(), nil, nil)
@@ -319,7 +319,7 @@ func getWebhook(client *mongo.Client, webhookID string) Webhook {
 
 // Delete webhook with the ID specified in function parameters
 func deleteWebhook(client *mongo.Client, webhookID string) {
-	db := client.Database("igcFiles")
+	db := client.Database("igcfiles")
 	collection := db.Collection("webhooks")
 
 	// Delete the webhook
@@ -332,7 +332,7 @@ func deleteWebhook(client *mongo.Client, webhookID string) {
 
 // Get all webhooks
 func getAllWebhooks(client *mongo.Client) []Webhook {
-	db := client.Database("igcFiles")
+	db := client.Database("igcfiles")
 	collection := db.Collection("webhooks")
 
 	var cursor mongo.Cursor
@@ -384,7 +384,7 @@ func clockTrigger(w http.ResponseWriter, r *http.Request) {
 
 			WebhookInfoTrackIDs := make([]string, 0)
 
-			collection := clientDB.Database("igcFiles").Collection("track")
+			collection := clientDB.Database("igcfiles").Collection("track")
 
 			cursor, err := collection.Find(context.Background(), nil, nil)
 			if err != nil {

@@ -53,7 +53,7 @@ func urlInMongo(url string, trackColl *mongo.Collection) bool {
 
 // Returns the track with the specified URL as function parameters
 func getTrack(client *mongo.Client, url string) Track {
-	db := client.Database("igcFiles")    // igcFiles Database
+	db := client.Database("igcfiles")    // igcFiles Database
 	collection := db.Collection("track") // track Collection
 
 	// Query collection to find the specific track with that URL
@@ -79,7 +79,7 @@ func getTrack(client *mongo.Client, url string) Track {
 
 // Delete all tracks
 func deleteAllTracks(client *mongo.Client) {
-	db := client.Database("igcFiles")
+	db := client.Database("igcfiles")
 	collection := db.Collection("track")
 
 	// Delete the tracks
@@ -88,7 +88,7 @@ func deleteAllTracks(client *mongo.Client) {
 
 // Count all tracks
 func countAllTracks(client *mongo.Client) int64 {
-	db := client.Database("igcFiles")
+	db := client.Database("igcfiles")
 	collection := db.Collection("track")
 
 	// Count the tracks
@@ -124,7 +124,7 @@ func returnTracks(n int) (string, time.Time) {
 
 // Get all tracks
 func getAllTracks(client *mongo.Client) []Track {
-	db := client.Database("igcFiles")
+	db := client.Database("igcfiles")
 	collection := db.Collection("track")
 
 	var cursor mongo.Cursor
